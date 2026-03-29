@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}写信倾诉{% endblock %}
+{% block content %}
+
+<div class="write-container">
+    <div class="write-header">
+        <h1 class="write-title">✍ 写一封信</h1>
+        <p class="write-subtitle">把心里的话写下来，店员会认真阅读并回复你</p>
+    </div>
+    <form method="POST">
+        <div class="letter-paper">
+            <div class="form-group">
+                <input class="form-input letter-title-input" type="text" name="title"
+                       placeholder="信件主题（可以是一两个词，也可以是一句话）" maxlength="100" required>
+            </div>
+            <div class="form-group">
+                <textarea class="form-input form-textarea letter-content-textarea"
+                          name="content"
+                          placeholder="亲爱的店员&#10;&#10;我想和你说……"
+                          required></textarea>
+            </div>
+        </div>
+        <div class="letter-actions">
+            <a href="{{ url_for('inbox') }}" class="btn btn-ghost">取消</a>
+            <button type="submit" class="btn btn-primary">📨 寄出这封信</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

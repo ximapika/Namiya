@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}信件管理{% endblock %}
+{% block content %}
+
+<div class="admin-container">
+    <div class="page-header">
+        <h1 class="page-title">📬 信件管理台</h1>
+        <span class="page-meta">店员：{{ session.username }}</span>
+    </div>
+
+    <div class="admin-stats">
+        <div class="stat-card">
+            <div class="stat-num">{{ total }}</div>
+            <div class="stat-label">总信件数</div>
+        </div>
+        <div class="stat-card stat-card-pending">
+            <div class="stat-num">{{ pending }}</div>
+            <div class="stat-label">待回复</div>
+        </div>
+        <div class="stat-card stat-card-replied">
+            <div class="stat-num">{{ replied }}</div>
+            <div class="stat-label">已回复</div>
+        </div>
+    </div>
+
+    {% if letters %}
+    <div class="letter-list-admin">
+        {% for letter in letters %}
+        <a href="{{ url_for('admin_letter', letter_id=letter.id) }}" class="admin-letter-item">
+            <span class="letter-item-icon">
+                {{ '💌' if letter.reply_count > 0 else '✉️' }}
+            </span>
+            <div class="letter-item-content">
+                <div class="letter-item-title">{{ letter.title }}</div>
+                <div class="letter-sender">
+                    来自：<strong>{{ letter.username }}</strong>
+                    <span class="sep">·</span>
+                    {{ letter.created_at }}
+                </div>
+            </div>
+            {% if letter.reply_count > 0 %}
+            <span class="letter-badge badge-replied">已回复 {{ letter.reply_count }}</span>
+            {% else %}
+            <span class="letter-badge badge-pending">未回复</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p class="empty-text">暂时没有信件</p>
+        <p class="empty-hint">等待同学们投递第一封信</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

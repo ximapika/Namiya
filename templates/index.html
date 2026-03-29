@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}解忧杂货铺{% endblock %}
+{% block content %}
+
+<section class="hero">
+    <div class="hero-inner">
+        <p class="hero-eyebrow">北京大学心理协会</p>
+        <h1 class="hero-title">解忧杂货铺</h1>
+        <div class="hero-divider">
+            <span class="hero-divider-star">✦</span>
+        </div>
+        <p class="hero-desc">
+            在这里，你可以把心里的秘密、烦恼、疑惑，<br>
+            写成一封信，悄悄地放进信箱。<br>
+            我们的店员会认真读完，轻声回应。
+        </p>
+        <div class="hero-actions">
+            {% if session.user_id %}
+                <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                <a href="{{ url_for('inbox') }}" class="btn btn-outline">📮 我的信箱</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline">注册账号</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="hero-decoration">✉</div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3 class="feature-title">安全私密</h3>
+        <p class="feature-desc">你的信件只有你和店员能看到，账号之间完全隔离，请放心倾诉。</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">💌</div>
+        <h3 class="feature-title">真诚回应</h3>
+        <p class="feature-desc">每一封信都会由心理协会的伙伴认真阅读，给予温暖的回复。</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🕊️</div>
+        <h3 class="feature-title">倾听陪伴</h3>
+        <p class="feature-desc">无论是大事小事，还是说不出口的感受，这里永远有人在。</p>
+    </div>
+</section>
+
+{% endblock %}

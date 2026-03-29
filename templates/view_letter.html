@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ letter.title }}{% endblock %}
+{% block content %}
+
+<div class="letter-view-container">
+    <a href="{{ url_for('inbox') }}" class="back-link">← 返回信箱</a>
+
+    <div class="letter-card">
+        <div class="letter-card-header">
+            <h2 class="letter-card-title">{{ letter.title }}</h2>
+            <span class="letter-card-date">{{ letter.created_at }}</span>
+        </div>
+        <div class="letter-card-body">{{ letter.content }}</div>
+    </div>
+
+    <div class="reply-section">
+        <div class="reply-section-title">
+            <span>📬</span> 店员回信
+        </div>
+        {% if replies %}
+            {% for reply in replies %}
+            <div class="reply-card">
+                <div class="reply-header">
+                    <span class="reply-from">店员 {{ reply.admin_name }}</span>
+                    <span>{{ reply.created_at }}</span>
+                </div>
+                <div class="reply-body">{{ reply.content }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="no-reply-hint">
+            🕐 店员还没有回复这封信，请耐心等待……
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

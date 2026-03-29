@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}注册{% endblock %}
+{% block content %}
+
+<div class="form-container">
+    <div class="form-header">
+        <div class="form-icon">📝</div>
+        <h1 class="form-title">创建账号</h1>
+        <p class="form-subtitle">加入解忧杂货铺，开始倾诉之旅</p>
+    </div>
+    <form method="POST" autocomplete="on">
+        <div class="form-group">
+            <label class="form-label" for="username">用户名</label>
+            <input class="form-input" type="text" id="username" name="username"
+                   placeholder="2–20 个字符" minlength="2" maxlength="20"
+                   autocomplete="username" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="password">密码</label>
+            <input class="form-input" type="password" id="password" name="password"
+                   placeholder="至少 6 个字符" minlength="6"
+                   autocomplete="new-password" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="confirm">确认密码</label>
+            <input class="form-input" type="password" id="confirm" name="confirm"
+                   placeholder="再次输入密码" minlength="6"
+                   autocomplete="new-password" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">注册</button>
+        </div>
+    </form>
+    <div class="form-footer">
+        已有账号？<a href="{{ url_for('login') }}">直接登录</a>
+    </div>
+</div>
+
+{% endblock %}
