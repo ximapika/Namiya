@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}解忧杂货铺{% endblock %} · 北大心理协会</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✉</text></svg>">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="navbar-brand">
+            <span class="brand-icon">✉</span>
+            <span class="brand-name">解忧杂货铺</span>
+        </a>
+        <div class="navbar-links">
+            {% if session.user_id %}
+                {% if session.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">📬 信件管理</a>
+                {% else %}
+                    <a href="{{ url_for('write') }}" class="nav-link">✍ 写信</a>
+                    <a href="{{ url_for('inbox') }}" class="nav-link">📮 我的信箱</a>
+                {% endif %}
+                <span class="nav-user">{{ session.username }}</span>
+                <a href="{{ url_for('logout') }}" class="nav-link btn-logout">退出</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link">登录</a>
+                <a href="{{ url_for('register') }}" class="nav-link btn-register">注册</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>北京大学心理协会 · 解忧杂货铺</p>
+        <p class="footer-quote">每一封信，都是一颗心的重量</p>
+    </footer>
+</body>
+</html>

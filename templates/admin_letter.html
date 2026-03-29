@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}查看信件 · {{ letter.title }}{% endblock %}
+{% block content %}
+
+<div class="letter-view-container">
+    <a href="{{ url_for('admin_dashboard') }}" class="back-link">← 返回信件列表</a>
+
+    <div class="letter-card">
+        <div class="letter-card-header">
+            <div>
+                <h2 class="letter-card-title">{{ letter.title }}</h2>
+                <div class="letter-sender-tag">
+                    来自：<strong>{{ letter.username }}</strong>
+                </div>
+            </div>
+            <span class="letter-card-date">{{ letter.created_at }}</span>
+        </div>
+        <div class="letter-card-body">{{ letter.content }}</div>
+    </div>
+
+    {% if replies %}
+    <div class="reply-section">
+        <div class="reply-section-title">
+            <span>📨</span> 历史回信（{{ replies | length }} 条）
+        </div>
+        {% for reply in replies %}
+        <div class="reply-card">
+            <div class="reply-header">
+                <span class="reply-from">店员 {{ reply.admin_name }}</span>
+                <span>{{ reply.created_at }}</span>
+            </div>
+            <div class="reply-body">{{ reply.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="reply-form-card">
+        <div class="reply-form-title">✍ 回复这封信</div>
+        <form method="POST">
+            <div class="form-group">
+                <textarea class="form-input form-textarea" name="content"
+                          placeholder="给这位同学写回信……" required></textarea>
+            </div>
+            <div class="reply-form-actions">
+                <button type="submit" class="btn btn-primary">📨 发送回信</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
