@@ -5,9 +5,17 @@
 <div class="letter-view-container">
     <a href="{{ url_for('admin_dashboard') }}" class="back-link">← 返回信件列表</a>
 
+    <!-- 来信/来电详情 -->
     <div class="letter-card">
         <div class="letter-card-header">
             <div>
+                <div class="letter-type-row">
+                    {% if letter.type == 'phone' %}
+                    <span class="type-tag type-tag-phone">来电</span>
+                    {% else %}
+                    <span class="type-tag type-tag-letter">来信</span>
+                    {% endif %}
+                </div>
                 <h2 class="letter-card-title">{{ letter.title }}</h2>
                 <div class="letter-sender-tag">
                     来自：<strong>{{ letter.username }}</strong>
@@ -15,13 +23,28 @@
             </div>
             <span class="letter-card-date">{{ letter.created_at }}</span>
         </div>
+
+        {% if letter.type == 'phone' %}
+        <div class="phone-info-box">
+            <span class="phone-info-icon">📞</span>
+            <div>
+                <div class="phone-info-label">联系电话</div>
+                <div class="phone-info-number">{{ letter.phone_number }}</div>
+            </div>
+        </div>
+        {% if letter.content %}
+        <div class="letter-card-body" style="margin-top:.8rem;">{{ letter.content }}</div>
+        {% endif %}
+        {% else %}
         <div class="letter-card-body">{{ letter.content }}</div>
+        {% endif %}
     </div>
 
+    <!-- 历史回复 -->
     {% if replies %}
     <div class="reply-section">
         <div class="reply-section-title">
-            <span>📨</span> 历史回信（{{ replies | length }} 条）
+            <span>📨</span> 历史回复（{{ replies | length }} 条）
         </div>
         {% for reply in replies %}
         <div class="reply-card">
@@ -35,18 +58,81 @@
     </div>
     {% endif %}
 
+    <!-- 回复区域 -->
+    {% if can_reply %}
     <div class="reply-form-card">
-        <div class="reply-form-title">✍ 回复这封信</div>
+        <div class="reply-form-title">✍ 回复</div>
         <form method="POST">
+            <input type="hidden" name="action" value="reply">
             <div class="form-group">
                 <textarea class="form-input form-textarea" name="content"
-                          placeholder="给这位同学写回信……" required></textarea>
+                          placeholder="给这位同学写回复……" required></textarea>
             </div>
             <div class="reply-form-actions">
-                <button type="submit" class="btn btn-primary">📨 发送回信</button>
+                <button type="submit" class="btn btn-primary">📨 发送回复</button>
             </div>
         </form>
     </div>
+    {% elif session.is_staff and not session.is_admin %}
+    <div class="reply-form-card staff-no-reply">
+        {% if has_pending_request %}
+        <div class="staff-request-status">
+            <span class="status-icon">⏳</span>
+            <div>
+                <div class="status-title">已提交申请，等待店长审批</div>
+                <div class="status-hint">审批通过后您即可回复这封信</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="staff-no-reply-hint">
+            <span>🔒</span>
+            <div>
+                <div class="hint-title">店员需申请回复权限</div>
+                <div class="hint-desc">您可以向店长申请对此信件的回复权限</div>
+            </div>
+        </div>
+        <form method="POST" style="margin-top:1rem;">
+            <input type="hidden" name="action" value="request_reply">
+            <button type="submit" class="btn btn-primary btn-sm">📋 申请回复权限</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 该用户历史记录 -->
+    {% if user_history %}
+    <div class="user-history-section">
+        <div class="user-history-title">
+            <span>📁</span> {{ letter.username }} 的历史记录（{{ user_history | length }} 条）
+        </div>
+        <div class="user-history-list">
+            {% for h in user_history %}
+            <a href="{{ url_for('admin_letter', letter_id=h.id) }}" class="history-item">
+                <span class="history-icon">
+                    {% if h.type == 'phone' %}📞{% elif h.reply_count > 0 %}💌{% else %}✉️{% endif %}
+                </span>
+                <div class="history-content">
+                    <div class="history-title-row">
+                        {% if h.type == 'phone' %}
+                        <span class="type-tag type-tag-phone type-tag-sm">来电</span>
+                        {% else %}
+                        <span class="type-tag type-tag-letter type-tag-sm">来信</span>
+                        {% endif %}
+                        <span class="history-title">{{ h.title }}</span>
+                    </div>
+                    <div class="history-meta">{{ h.created_at }}</div>
+                </div>
+                {% if h.reply_count > 0 %}
+                <span class="letter-badge badge-replied">已处理</span>
+                {% else %}
+                <span class="letter-badge badge-pending">待处理</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
 {% endblock %}

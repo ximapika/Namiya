@@ -4,27 +4,106 @@
 
 <div class="write-container">
     <div class="write-header">
-        <h1 class="write-title">✍ 写一封信</h1>
-        <p class="write-subtitle">把心里的话写下来，店员会认真阅读并回复你</p>
+        <h1 class="write-title">倾诉心声</h1>
+        <p class="write-subtitle">选择您喜欢的方式，把心里的话告诉我们</p>
     </div>
-    <form method="POST">
-        <div class="letter-paper">
-            <div class="form-group">
-                <input class="form-input letter-title-input" type="text" name="title"
-                       placeholder="信件主题（可以是一两个词，也可以是一句话）" maxlength="100" required>
-            </div>
-            <div class="form-group">
-                <textarea class="form-input form-textarea letter-content-textarea"
-                          name="content"
-                          placeholder="亲爱的店员&#10;&#10;我想和你说……"
-                          required></textarea>
+
+    <form method="POST" id="writeForm">
+
+        <!-- 类型切换 -->
+        <div class="type-switcher">
+            <button type="button" class="type-tab active" data-type="letter" onclick="switchType('letter')">
+                <span class="type-tab-icon">✉️</span>
+                <span class="type-tab-label">写信倾诉</span>
+            </button>
+            <button type="button" class="type-tab" data-type="phone" onclick="switchType('phone')">
+                <span class="type-tab-icon">📞</span>
+                <span class="type-tab-label">电话倾诉</span>
+            </button>
+        </div>
+        <input type="hidden" name="type" id="typeInput" value="letter">
+
+        <!-- 写信区域 -->
+        <div id="letterSection">
+            <div class="letter-paper">
+                <div class="form-group">
+                    <input class="form-input letter-title-input" type="text" name="title"
+                           placeholder="信件主题（可以是一两个词，也可以是一句话）" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <textarea class="form-input form-textarea letter-content-textarea"
+                              name="content"
+                              placeholder="亲爱的店员&#10;&#10;我想和你说……"></textarea>
+                </div>
             </div>
         </div>
+
+        <!-- 来电区域 -->
+        <div id="phoneSection" style="display:none;">
+            <div class="letter-paper phone-paper">
+                <div class="phone-paper-icon">📞</div>
+                <p class="phone-paper-desc">我们的店员将会在合适的时间致电与您倾心交流。<br>请留下您的联系方式，并简单描述一下您的心情或需求。</p>
+                <div class="form-group">
+                    <input class="form-input letter-title-input" type="text" name="phone_title"
+                           placeholder="主题（例如：想聊聊最近的压力）" maxlength="100" id="phoneTitleInput">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">您的联系电话 <span class="required-mark">*</span></label>
+                    <input class="form-input" type="tel" name="phone_number"
+                           placeholder="请输入您的手机号码" maxlength="20" id="phoneInput">
+                    <p class="field-hint">您的电话号码仅供店员联系使用，不会对其他用户展示。</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">留言（可选）</label>
+                    <textarea class="form-input form-textarea phone-content-textarea"
+                              name="phone_content"
+                              id="phoneContentInput"
+                              placeholder="您可以简单说明您目前的状态，或希望聊些什么……"></textarea>
+                </div>
+            </div>
+        </div>
+
         <div class="letter-actions">
             <a href="{{ url_for('inbox') }}" class="btn btn-ghost">取消</a>
-            <button type="submit" class="btn btn-primary">📨 寄出这封信</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">📨 寄出这封信</button>
         </div>
     </form>
 </div>
+
+<script>
+function switchType(type) {
+    document.getElementById('typeInput').value = type;
+    document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-type="' + type + '"]').classList.add('active');
+
+    if (type === 'letter') {
+        document.getElementById('letterSection').style.display = '';
+        document.getElementById('phoneSection').style.display = 'none';
+        document.getElementById('submitBtn').textContent = '📨 寄出这封信';
+        // 同步 title 字段
+        document.querySelector('input[name="title"]').required = true;
+        document.querySelector('textarea[name="content"]').required = true;
+        document.getElementById('phoneInput').required = false;
+        document.getElementById('phoneTitleInput').required = false;
+    } else {
+        document.getElementById('letterSection').style.display = 'none';
+        document.getElementById('phoneSection').style.display = '';
+        document.getElementById('submitBtn').textContent = '📞 提交来电登记';
+        document.querySelector('input[name="title"]').required = false;
+        document.querySelector('textarea[name="content"]').required = false;
+        document.getElementById('phoneInput').required = true;
+        document.getElementById('phoneTitleInput').required = true;
+    }
+}
+
+// 提交前同步字段
+document.getElementById('writeForm').addEventListener('submit', function() {
+    var type = document.getElementById('typeInput').value;
+    if (type === 'phone') {
+        document.querySelector('input[name="title"]').value = document.getElementById('phoneTitleInput').value;
+        document.querySelector('textarea[name="content"]').value = document.getElementById('phoneContentInput').value;
+    }
+});
+</script>
 
 {% endblock %}
