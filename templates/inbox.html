@@ -5,7 +5,7 @@
 <div class="inbox-container">
     <div class="page-header">
         <h1 class="page-title">📮 我的信箱</h1>
-        <a href="{{ url_for('write') }}" class="btn btn-primary btn-sm">✍ 写信</a>
+        <a href="{{ url_for('write') }}" class="btn btn-primary btn-sm">✍ 写信 / 来电登记</a>
     </div>
 
     {% if letters %}
@@ -14,10 +14,23 @@
         <li>
             <a href="{{ url_for('view_letter', letter_id=letter.id) }}" class="letter-item">
                 <span class="letter-item-icon">
-                    {{ '💌' if letter.reply_count > 0 else '✉️' }}
+                    {% if letter.type == 'phone' %}
+                        📞
+                    {% elif letter.reply_count > 0 %}
+                        💌
+                    {% else %}
+                        ✉️
+                    {% endif %}
                 </span>
                 <div class="letter-item-content">
-                    <div class="letter-item-title">{{ letter.title }}</div>
+                    <div class="letter-item-title-row">
+                        {% if letter.type == 'phone' %}
+                        <span class="type-tag type-tag-phone">来电</span>
+                        {% else %}
+                        <span class="type-tag type-tag-letter">来信</span>
+                        {% endif %}
+                        <span class="letter-item-title">{{ letter.title }}</span>
+                    </div>
                     <div class="letter-item-meta">{{ letter.created_at }}</div>
                 </div>
                 {% if letter.reply_count > 0 %}
@@ -33,9 +46,9 @@
     <div class="empty-state">
         <div class="empty-icon">📭</div>
         <p class="empty-text">信箱还是空的</p>
-        <p class="empty-hint">写下你的第一封信，把心事交给店员吧</p>
+        <p class="empty-hint">写下你的第一封信，或登记来电，把心事交给店员吧</p>
         <br>
-        <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 写第一封信</a>
+        <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 开始倾诉</a>
     </div>
     {% endif %}
 </div>

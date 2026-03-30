@@ -7,15 +7,38 @@
 
     <div class="letter-card">
         <div class="letter-card-header">
-            <h2 class="letter-card-title">{{ letter.title }}</h2>
+            <div>
+                <div class="letter-type-row">
+                    {% if letter.type == 'phone' %}
+                    <span class="type-tag type-tag-phone">来电</span>
+                    {% else %}
+                    <span class="type-tag type-tag-letter">来信</span>
+                    {% endif %}
+                </div>
+                <h2 class="letter-card-title">{{ letter.title }}</h2>
+            </div>
             <span class="letter-card-date">{{ letter.created_at }}</span>
         </div>
+
+        {% if letter.type == 'phone' %}
+        <div class="phone-info-box">
+            <span class="phone-info-icon">📞</span>
+            <div>
+                <div class="phone-info-label">联系电话</div>
+                <div class="phone-info-number">{{ letter.phone_number }}</div>
+            </div>
+        </div>
+        {% if letter.content %}
+        <div class="letter-card-body" style="margin-top:.8rem;">{{ letter.content }}</div>
+        {% endif %}
+        {% else %}
         <div class="letter-card-body">{{ letter.content }}</div>
+        {% endif %}
     </div>
 
     <div class="reply-section">
         <div class="reply-section-title">
-            <span>📬</span> 店员回信
+            <span>📬</span> 店员回复
         </div>
         {% if replies %}
             {% for reply in replies %}
@@ -29,7 +52,7 @@
             {% endfor %}
         {% else %}
         <div class="no-reply-hint">
-            🕐 店员还没有回复这封信，请耐心等待……
+            🕐 店员还没有回复，请耐心等待……
         </div>
         {% endif %}
     </div>

@@ -16,6 +16,10 @@
         <div class="navbar-links">
             {% if session.user_id %}
                 {% if session.is_admin %}
+                    <span class="role-badge role-admin">店长</span>
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">📬 信件管理</a>
+                {% elif session.is_staff %}
+                    <span class="role-badge role-staff">店员</span>
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-link">📬 信件管理</a>
                 {% else %}
                     <a href="{{ url_for('write') }}" class="nav-link">✍ 写信</a>
