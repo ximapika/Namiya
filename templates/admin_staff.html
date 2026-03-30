@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}店员管理{% endblock %}
+{% block content %}
+
+<div class="admin-container">
+    <div class="page-header">
+        <h1 class="page-title">👥 店员管理</h1>
+        <span class="page-meta">店长：{{ session.username }}</span>
+    </div>
+
+    <!-- 当前店员列表 -->
+    <div class="staff-section">
+        <div class="section-title">当前店员（{{ staff_list | length }}）</div>
+        {% if staff_list %}
+        <div class="staff-list">
+            {% for staff in staff_list %}
+            <div class="staff-item">
+                <div class="staff-item-info">
+                    <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
+                    <span class="staff-name">{{ staff.username }}</span>
+                    <span class="staff-since">加入于 {{ staff.created_at }}</span>
+                </div>
+                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                    <input type="hidden" name="username" value="{{ staff.username }}">
+                    <input type="hidden" name="action" value="revoke">
+                    <input type="hidden" name="redirect_to" value="staff">
+                    <button type="submit" class="btn btn-ghost btn-xs"
+                            onclick="return confirm('确认撤销 {{ staff.username }} 的店员权限？')">撤销权限</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem 0;">
+            <div class="empty-icon">👤</div>
+            <p class="empty-text">暂无店员</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 账号查询 & 赋权 -->
+    <div class="staff-section">
+        <div class="section-title">查询账号</div>
+        <form class="filter-search" method="GET" action="{{ url_for('admin_staff') }}" style="margin-bottom:1.2rem;">
+            <input class="search-input" type="text" name="search"
+                   placeholder="输入用户名精确查询…" value="{{ search_user }}">
+            <button type="submit" class="btn btn-primary btn-sm">查询</button>
+            {% if search_user %}
+            <a href="{{ url_for('admin_staff') }}" class="btn btn-ghost btn-sm">清除</a>
+            {% endif %}
+        </form>
+
+        {% if search_user and search_result is none %}
+        <div class="empty-state" style="padding:1.5rem 0;">
+            <p class="empty-text">未找到用户 "{{ search_user }}"</p>
+        </div>
+        {% elif search_result %}
+        <div class="search-result-card">
+            <div class="search-result-header">
+                <div class="search-result-name">
+                    <strong>{{ search_result.username }}</strong>
+                    {% if search_result.is_admin %}
+                    <span class="role-badge role-admin" style="font-size:.75rem;">店长</span>
+                    {% elif search_result.is_staff %}
+                    <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
+                    {% else %}
+                    <span class="role-badge" style="font-size:.75rem;background:var(--c-accent-dim);color:var(--c-text-muted);">普通用户</span>
+                    {% endif %}
+                </div>
+                <span class="staff-since">注册于 {{ search_result.created_at }}</span>
+            </div>
+
+            {% if not search_result.is_admin %}
+            <div style="margin-top:.8rem;">
+                {% if search_result.is_staff %}
+                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                    <input type="hidden" name="username" value="{{ search_result.username }}">
+                    <input type="hidden" name="action" value="revoke">
+                    <input type="hidden" name="redirect_to" value="staff">
+                    <button type="submit" class="btn btn-ghost btn-sm">撤销店员权限</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                    <input type="hidden" name="username" value="{{ search_result.username }}">
+                    <input type="hidden" name="action" value="grant">
+                    <input type="hidden" name="redirect_to" value="staff">
+                    <button type="submit" class="btn btn-primary btn-sm">授予店员权限</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if search_history %}
+            <div class="user-history-section" style="margin-top:1.2rem;">
+                <div class="user-history-title">
+                    <span>📁</span> 历史来信来电（{{ search_history | length }} 条）
+                </div>
+                <div class="user-history-list">
+                    {% for h in search_history %}
+                    <a href="{{ url_for('admin_letter', letter_id=h.id) }}" class="history-item">
+                        <span class="history-icon">
+                            {% if h.type == 'phone' %}📞{% elif h.reply_count > 0 %}💌{% else %}✉️{% endif %}
+                        </span>
+                        <div class="history-content">
+                            <div class="history-title-row">
+                                {% if h.type == 'phone' %}
+                                <span class="type-tag type-tag-phone type-tag-sm">来电</span>
+                                {% else %}
+                                <span class="type-tag type-tag-letter type-tag-sm">来信</span>
+                                {% endif %}
+                                <span class="history-title">{{ h.title }}</span>
+                            </div>
+                            <div class="history-meta">{{ h.created_at }}</div>
+                        </div>
+                        {% if h.reply_count > 0 %}
+                        <span class="letter-badge badge-replied">已处理</span>
+                        {% else %}
+                        <span class="letter-badge badge-pending">待处理</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div style="margin-top:.8rem;color:var(--c-text-muted);font-size:.9rem;">该用户暂无来信来电记录</div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
