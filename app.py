@@ -515,11 +515,49 @@ def approve_reply(req_id):
     return redirect(url_for('admin_dashboard'))
 
 
+@app.route('/admin/staff')
+@admin_required
+def admin_staff():
+    search_user = request.args.get('search', '').strip()
+    conn = get_db()
+
+    # 已有店员列表
+    staff_list = conn.execute(
+        'SELECT id, username, created_at FROM users WHERE is_staff = 1 AND is_admin = 0 ORDER BY username'
+    ).fetchall()
+
+    # 搜索账号
+    search_result = None
+    search_history = []
+    if search_user:
+        search_result = conn.execute(
+            'SELECT id, username, is_admin, is_staff, created_at FROM users WHERE username = ?',
+            (search_user,)
+        ).fetchone()
+        if search_result:
+            search_history = conn.execute('''
+                SELECT l.id, l.title, l.type, l.created_at, COUNT(r.id) AS reply_count
+                FROM   letters l
+                LEFT JOIN replies r ON r.letter_id = l.id
+                WHERE  l.user_id = ?
+                GROUP  BY l.id
+                ORDER  BY l.created_at DESC
+            ''', (search_result['id'],)).fetchall()
+
+    conn.close()
+    return render_template('admin_staff.html',
+                           staff_list=staff_list,
+                           search_user=search_user,
+                           search_result=search_result,
+                           search_history=search_history)
+
+
 @app.route('/admin/grant_staff', methods=['POST'])
 @admin_required
 def grant_staff():
     username = request.form.get('username', '').strip()
     action   = request.form.get('action', 'grant')  # grant / revoke
+    redirect_to = request.form.get('redirect_to', 'staff')  # staff / dashboard
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     if not user:
@@ -536,7 +574,52 @@ def grant_staff():
             conn.commit()
             flash(f'已撤销 {username} 的店员权限', 'success')
     conn.close()
-    return redirect(url_for('admin_dashboard'))
+    if redirect_to == 'dashboard':
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('admin_staff', search=username))
+
+
+@app.route('/admin/grant_reply_direct/<int:letter_id>', methods=['POST'])
+@admin_required
+def grant_reply_direct(letter_id):
+    """店长直接赋予指定店员对某封信的回复权限，无需店员申请"""
+    staff_username = request.form.get('staff_username', '').strip()
+    conn = get_db()
+    staff = conn.execute(
+        'SELECT id FROM users WHERE username = ? AND is_staff = 1 AND is_admin = 0',
+        (staff_username,)
+    ).fetchone()
+    if not staff:
+        flash(f'店员 "{staff_username}" 不存在', 'error')
+        conn.close()
+        return redirect(url_for('admin_letter', letter_id=letter_id))
+
+    # 检查是否已有批准的权限
+    existing = conn.execute(
+        'SELECT id, status FROM reply_requests WHERE letter_id = ? AND staff_id = ?',
+        (letter_id, staff['id'])
+    ).fetchone()
+
+    if existing:
+        if existing['status'] == 'approved':
+            flash(f'{staff_username} 已拥有此信件的回复权限', 'info')
+        else:
+            conn.execute(
+                'UPDATE reply_requests SET status = ? WHERE id = ?',
+                ('approved', existing['id'])
+            )
+            conn.commit()
+            flash(f'已直接授予 {staff_username} 对此信件的回复权限', 'success')
+    else:
+        conn.execute(
+            'INSERT INTO reply_requests (letter_id, staff_id, status) VALUES (?, ?, ?)',
+            (letter_id, staff['id'], 'approved')
+        )
+        conn.commit()
+        flash(f'已直接授予 {staff_username} 对此信件的回复权限', 'success')
+
+    conn.close()
+    return redirect(url_for('admin_letter', letter_id=letter_id))
 
 
 # ─── 启动 ──────────────────────────────────────────────────────────────────────

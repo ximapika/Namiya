@@ -58,6 +58,20 @@
     </div>
     {% endif %}
 
+    <!-- 店长：直接赋予店员回复权限 -->
+    {% if session.is_admin %}
+    <div class="reply-form-card" style="margin-bottom:1rem;">
+        <div class="reply-form-title">🔑 赋予店员回复权限</div>
+        <form method="POST" action="{{ url_for('grant_reply_direct', letter_id=letter.id) }}"
+              class="grant-staff-form" style="margin-top:.8rem;">
+            <input class="form-input grant-input" type="text" name="staff_username"
+                   placeholder="输入店员用户名" required>
+            <button type="submit" class="btn btn-primary btn-sm">直接授权</button>
+        </form>
+        <p style="margin-top:.5rem;font-size:.85rem;color:var(--c-text-muted);">授权后该店员可直接回复此信件，无需再申请</p>
+    </div>
+    {% endif %}
+
     <!-- 回复区域 -->
     {% if can_reply %}
     <div class="reply-form-card">

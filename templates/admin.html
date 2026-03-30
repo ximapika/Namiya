@@ -99,16 +99,11 @@
     </div>
     {% endif %}
 
-    <!-- 授予店员权限（仅店长可见） -->
+    <!-- 店员管理入口（仅店长可见） -->
     {% if session.is_admin %}
     <div class="grant-staff-section">
-        <div class="grant-staff-title">👤 账号权限管理</div>
-        <form class="grant-staff-form" method="POST" action="{{ url_for('grant_staff') }}">
-            <input class="form-input grant-input" type="text" name="username"
-                   placeholder="输入用户名" required>
-            <button type="submit" name="action" value="grant"   class="btn btn-primary btn-sm">授予店员权限</button>
-            <button type="submit" name="action" value="revoke"  class="btn btn-ghost   btn-sm">撤销店员权限</button>
-        </form>
+        <div class="grant-staff-title">👥 店员管理</div>
+        <a href="{{ url_for('admin_staff') }}" class="btn btn-primary btn-sm">进入店员管理页面</a>
     </div>
     {% endif %}
 
