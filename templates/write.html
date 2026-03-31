@@ -21,19 +21,20 @@
                 <span class="type-tab-label">电话倾诉</span>
             </button>
         </div>
-        <input type="hidden" name="type" id="typeInput" value="letter">
+        <input type="hidden" name="type" id="typeInput" value="{{ request.form.get('type', 'letter') }}">
 
         <!-- 写信区域 -->
         <div id="letterSection">
             <div class="letter-paper">
                 <div class="form-group">
                     <input class="form-input letter-title-input" type="text" name="title"
-                           placeholder="信件主题（可以是一两个词，也可以是一句话）" maxlength="100">
+                           placeholder="信件主题（可以是一两个词，也可以是一句话）" maxlength="100"
+                           value="{{ request.form.get('title', '') }}">
                 </div>
                 <div class="form-group">
                     <textarea class="form-input form-textarea letter-content-textarea"
                               name="content"
-                              placeholder="亲爱的店员&#10;&#10;我想和你说……"></textarea>
+                              placeholder="亲爱的店员&#10;&#10;我想和你说……">{{ request.form.get('content', '') }}</textarea>
                 </div>
             </div>
         </div>
@@ -45,20 +46,29 @@
                 <p class="phone-paper-desc">我们的店员将会在合适的时间致电与您倾心交流。<br>请留下您的联系方式，并简单描述一下您的心情或需求。</p>
                 <div class="form-group">
                     <input class="form-input letter-title-input" type="text" name="phone_title"
-                           placeholder="主题（例如：想聊聊最近的压力）" maxlength="100" id="phoneTitleInput">
+                           placeholder="主题（例如：想聊聊最近的压力）" maxlength="100" id="phoneTitleInput"
+                           value="{{ request.form.get('phone_title', request.form.get('title', '')) }}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">您的联系电话 <span class="required-mark">*</span></label>
                     <input class="form-input" type="tel" name="phone_number"
-                           placeholder="请输入您的手机号码" maxlength="20" id="phoneInput">
+                           placeholder="请输入您的手机号码" maxlength="20" id="phoneInput"
+                           value="{{ request.form.get('phone_number', '') }}">
                     <p class="field-hint">您的电话号码仅供店员联系使用，不会对其他用户展示。</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">希望的来电时间 <span class="required-mark">*</span></label>
+                    <input class="form-input" type="text" name="preferred_call_time"
+                           placeholder="例如：今晚 8 点后 / 周三下午 / 近两天都可以" maxlength="80" id="preferredCallTimeInput"
+                           value="{{ request.form.get('preferred_call_time', '') }}">
+                    <p class="field-hint">可以填写一个具体时间，也可以写下方便接听的时间段。</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label">留言（可选）</label>
                     <textarea class="form-input form-textarea phone-content-textarea"
                               name="phone_content"
                               id="phoneContentInput"
-                              placeholder="您可以简单说明您目前的状态，或希望聊些什么……"></textarea>
+                              placeholder="您可以简单说明您目前的状态，或希望聊些什么……">{{ request.form.get('phone_content', request.form.get('content', '')) }}</textarea>
                 </div>
             </div>
         </div>
@@ -85,6 +95,7 @@ function switchType(type) {
         document.querySelector('textarea[name="content"]').required = true;
         document.getElementById('phoneInput').required = false;
         document.getElementById('phoneTitleInput').required = false;
+        document.getElementById('preferredCallTimeInput').required = false;
     } else {
         document.getElementById('letterSection').style.display = 'none';
         document.getElementById('phoneSection').style.display = '';
@@ -93,6 +104,7 @@ function switchType(type) {
         document.querySelector('textarea[name="content"]').required = false;
         document.getElementById('phoneInput').required = true;
         document.getElementById('phoneTitleInput').required = true;
+        document.getElementById('preferredCallTimeInput').required = true;
     }
 }
 
@@ -104,6 +116,8 @@ document.getElementById('writeForm').addEventListener('submit', function() {
         document.querySelector('textarea[name="content"]').value = document.getElementById('phoneContentInput').value;
     }
 });
+
+switchType(document.getElementById('typeInput').value || 'letter');
 </script>
 
 {% endblock %}
