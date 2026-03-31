@@ -6,8 +6,9 @@
     <title>{% block title %}解忧杂货铺{% endblock %} · 北大心理协会</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✉</text></svg>">
+    {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-theme="{{ active_theme }}">
     <nav class="navbar">
         <a href="{{ url_for('index') }}" class="navbar-brand">
             <span class="brand-icon">✉</span>
@@ -53,5 +54,6 @@
         <p>北京大学心理协会 · 解忧杂货铺</p>
         <p class="footer-quote">每一封信，都是一颗心的重量</p>
     </footer>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

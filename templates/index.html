@@ -2,32 +2,118 @@
 {% block title %}解忧杂货铺{% endblock %}
 {% block content %}
 
-<section class="hero">
-    <div class="hero-inner">
-        <p class="hero-eyebrow">北京大学心理协会</p>
-        <h1 class="hero-title">解忧杂货铺</h1>
-        <div class="hero-divider">
-            <span class="hero-divider-star">✦</span>
+<section class="home-hero">
+    <div class="home-hero-grid">
+        <div class="home-copy">
+            <p class="hero-eyebrow">北京大学心理协会 · 黑麦支持项目</p>
+            <h1 class="hero-title">解忧杂货铺</h1>
+            <p class="hero-desc hero-desc-wide">
+                在难以开口的时候，把感受写下来，或者留下一个电话。<br>
+                这里接住夜里的心事，也认真等待天亮后的回音。
+            </p>
+            <div class="hero-actions hero-actions-left">
+                {% if session.user_id %}
+                    <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                    <a href="{{ url_for('inbox') }}" class="btn btn-outline">📮 我的信箱</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline">注册账号</a>
+                {% endif %}
+            </div>
+            <div class="hero-facts">
+                <div class="hero-fact">
+                    <strong>安静写下</strong>
+                    <span>你可以慢慢整理想说的话，不必急着把所有情绪一次讲完。</span>
+                </div>
+                <div class="hero-fact">
+                    <strong>等一封回信</strong>
+                    <span>每一份来信都会被认真阅读，也会在合适的时候收到回应。</span>
+                </div>
+                <div class="hero-fact">
+                    <strong>留一个电话</strong>
+                    <span>如果更想被听见，也可以选择电话倾诉，让陪伴更靠近一点。</span>
+                </div>
+            </div>
         </div>
-        <p class="hero-desc">
-            在这里，你可以把心里的秘密、烦恼、疑惑，<br>
-            写成一封信，悄悄地放进信箱。<br>
-            我们的店员会认真读完，轻声回应。
-        </p>
-        <div class="hero-actions">
-            {% if session.user_id %}
-                <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 写信倾诉</a>
-                <a href="{{ url_for('inbox') }}" class="btn btn-outline">📮 我的信箱</a>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="btn btn-primary">✍ 写信倾诉</a>
-                <a href="{{ url_for('register') }}" class="btn btn-outline">注册账号</a>
+
+        <div class="promo-shell" data-carousel>
+            <div class="promo-stage">
+                {% for slide in promo_slides %}
+                <article class="promo-slide{% if loop.first %} is-active{% endif %}" data-slide>
+                    <img src="{{ slide.image_url }}" alt="{{ slide.title }}" class="promo-image">
+                    <div class="promo-gradient"></div>
+                    <div class="promo-copy">
+                        <p class="promo-eyebrow">{{ slide.eyebrow }}</p>
+                        <h2 class="promo-title">{{ slide.title }}</h2>
+                        <p class="promo-text">{{ slide.description }}</p>
+                        <div class="promo-meta-row">
+                            <span class="promo-badge">{{ slide.label }}</span>
+                            <span class="promo-tone">{{ slide.tone }}</span>
+                        </div>
+                        {% if slide.link %}
+                        <a href="{{ slide.link }}" class="btn btn-primary btn-sm">{{ slide.link_text }}</a>
+                        {% endif %}
+                    </div>
+                </article>
+                {% endfor %}
+
+                {% if promo_slides|length > 1 %}
+                <button type="button" class="promo-nav promo-nav-prev" aria-label="上一张广告">‹</button>
+                <button type="button" class="promo-nav promo-nav-next" aria-label="下一张广告">›</button>
+                {% endif %}
+            </div>
+
+            {% if promo_slides %}
+            <div class="promo-selector">
+                {% for slide in promo_slides %}
+                <button type="button"
+                        class="promo-choice{% if loop.first %} is-active{% endif %}"
+                        data-slide-to="{{ loop.index0 }}"
+                        aria-label="切换到 {{ slide.label }}">
+                    <span class="promo-choice-thumb" style="background-image: url('{{ slide.image_url }}');"></span>
+                    <span class="promo-choice-copy">
+                        <strong>{{ slide.label }}</strong>
+                        <small>{{ slide.link_text if slide.link else '仅展示' }}</small>
+                    </span>
+                </button>
+                {% endfor %}
+            </div>
             {% endif %}
         </div>
     </div>
-    <div class="hero-decoration">✉</div>
 </section>
 
-<section class="features">
+<section class="tone-section">
+    <div class="section-heading">
+        <p class="section-kicker">风格色调</p>
+        <h2 class="section-title-lg">挑一种更适合此刻心情的夜色</h2>
+        <p class="section-desc">月白、纸页、青岚，不同的色调，陪你进入不同的情绪温度。</p>
+    </div>
+    <div class="tone-grid">
+        {% for theme in theme_options %}
+        <form method="POST" action="{{ url_for('set_theme') }}" class="tone-form">
+            <input type="hidden" name="theme" value="{{ theme.key }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="tone-card{% if active_theme == theme.key %} is-active{% endif %}">
+                <span class="tone-swatches">
+                    {% for color in theme.preview %}
+                    <span class="tone-swatch" style="background: {{ color }};"></span>
+                    {% endfor %}
+                </span>
+                <span class="tone-card-header">
+                    <span class="tone-name">{{ theme.label }}</span>
+                    {% if active_theme == theme.key %}
+                    <span class="tone-status">当前</span>
+                    {% endif %}
+                </span>
+                <span class="tone-desc">{{ theme.description }}</span>
+            </button>
+        </form>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="features features-home">
     <div class="feature-card">
         <div class="feature-icon">🔒</div>
         <h3 class="feature-title">安全私密</h3>
@@ -45,4 +131,8 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}
