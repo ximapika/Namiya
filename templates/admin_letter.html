@@ -27,9 +27,17 @@
         {% if letter.type == 'phone' %}
         <div class="phone-info-box">
             <span class="phone-info-icon">📞</span>
-            <div>
-                <div class="phone-info-label">联系电话</div>
-                <div class="phone-info-number">{{ letter.phone_number }}</div>
+            <div class="phone-info-details">
+                <div class="phone-info-item">
+                    <div class="phone-info-label">联系电话</div>
+                    <div class="phone-info-number">{{ letter.phone_number }}</div>
+                </div>
+                {% if letter.preferred_call_time %}
+                <div class="phone-info-item">
+                    <div class="phone-info-label">希望来电时间</div>
+                    <div class="phone-info-value">{{ letter.preferred_call_time }}</div>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% if letter.content %}

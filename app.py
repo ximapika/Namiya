@@ -50,8 +50,8 @@ PROMO_SLIDES = [
     {
         'label': '深夜倾听',
         'eyebrow': 'Hello I\'m listening to you',
-        'title': '把难以启齿的心事，放进会发光的门里',
-        'description': '无论是学业压力、关系困惑，还是一句说不出口的话，都可以在这里慢慢写下来。',
+        'title': '写下心事，或留下一个电话，等一声温柔回应',
+        'description': '如果你想被听见，也可以登记电话倾诉。来信与来电，都会被认真接住。',
         'image': 'img/promos/c7ba9d7ccb8c822979aa3980c5b53bab.jpg',
         'tone': '月色夜航',
         'link': '/write',
@@ -60,8 +60,8 @@ PROMO_SLIDES = [
     {
         'label': '温柔回应',
         'eyebrow': 'We are here for you',
-        'title': '写下心事，或留下一个电话，等一声温柔回应',
-        'description': '如果你更想被听见，也可以登记电话倾诉。来信与来电，都会被认真接住。',
+        'title': '把难以启齿的心事，放进会发光的门里',
+        'description': '无论是学业压力、关系困惑，还是一句说不出口的话，都可以在这里慢慢写下来。',
         'image': 'img/promos/c7ba9d7ccb8c822979aa3980c5b53bab-1.jpg',
         'tone': '微光回信',
         'link': '/register',
@@ -98,6 +98,7 @@ def init_db():
             content      TEXT    NOT NULL,
             type         TEXT    DEFAULT 'letter',
             phone_number TEXT    DEFAULT '',
+            preferred_call_time TEXT DEFAULT '',
             created_at   TEXT    DEFAULT (datetime('now', 'localtime')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
@@ -124,7 +125,7 @@ def init_db():
     ''')
 
     # 迁移：旧库可能缺少新字段，尝试添加
-    for col, defval in [('is_staff', '0'), ('type', "'letter'"), ('phone_number', "''")]:
+    for col, defval in [('is_staff', '0'), ('type', "'letter'"), ('phone_number', "''"), ('preferred_call_time', "''")]:
         try:
             if col in ('is_staff',):
                 cur.execute(f'ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {defval}')
@@ -312,13 +313,20 @@ def write():
         return redirect(url_for('admin_dashboard'))
 
     if request.method == 'POST':
-        title        = request.form.get('title', '').strip()
-        content      = request.form.get('content', '').strip()
-        msg_type     = request.form.get('type', 'letter')
-        phone_number = request.form.get('phone_number', '').strip()
+        msg_type            = request.form.get('type', 'letter')
+        title               = request.form.get('title', '').strip()
+        content             = request.form.get('content', '').strip()
+        phone_title         = request.form.get('phone_title', '').strip()
+        phone_content       = request.form.get('phone_content', '').strip()
+        phone_number        = request.form.get('phone_number', '').strip()
+        preferred_call_time = request.form.get('preferred_call_time', '').strip()
 
         if msg_type not in ('letter', 'phone'):
             msg_type = 'letter'
+
+        if msg_type == 'phone':
+            title = phone_title or title
+            content = phone_content or content
 
         errors = []
         if not title:
@@ -327,6 +335,8 @@ def write():
             errors.append('请填写信件内容')
         if msg_type == 'phone' and not phone_number:
             errors.append('请填写您的联系电话')
+        if msg_type == 'phone' and not preferred_call_time:
+            errors.append('请填写您希望的来电时间')
 
         if errors:
             for err in errors:
@@ -334,8 +344,11 @@ def write():
         else:
             conn = get_db()
             conn.execute(
-                'INSERT INTO letters (user_id, title, content, type, phone_number) VALUES (?, ?, ?, ?, ?)',
-                (session['user_id'], title, content, msg_type, phone_number)
+                '''
+                INSERT INTO letters (user_id, title, content, type, phone_number, preferred_call_time)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''',
+                (session['user_id'], title, content, msg_type, phone_number, preferred_call_time)
             )
             conn.commit()
             conn.close()
@@ -356,7 +369,7 @@ def inbox():
 
     conn = get_db()
     letters = conn.execute('''
-        SELECT l.id, l.title, l.type, l.phone_number, l.created_at,
+        SELECT l.id, l.title, l.type, l.phone_number, l.preferred_call_time, l.created_at,
                COUNT(r.id) AS reply_count
         FROM   letters l
         LEFT JOIN replies r ON r.letter_id = l.id
@@ -424,7 +437,7 @@ def admin_dashboard():
     where_sql = ('WHERE ' + ' AND '.join(where_clauses)) if where_clauses else ''
 
     letters = conn.execute(f'''
-        SELECT l.id, l.title, l.type, l.phone_number, l.created_at, u.username,
+        SELECT l.id, l.title, l.type, l.phone_number, l.preferred_call_time, l.created_at, u.username,
                COUNT(r.id) AS reply_count
         FROM   letters l
         JOIN   users   u ON l.user_id = u.id

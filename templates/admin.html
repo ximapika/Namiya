@@ -134,6 +134,10 @@
                     来自：<strong>{{ letter.username }}</strong>
                     <span class="sep">·</span>
                     {{ letter.created_at }}
+                    {% if letter.type == 'phone' and letter.preferred_call_time %}
+                    <span class="sep">·</span>
+                    希望来电：{{ letter.preferred_call_time }}
+                    {% endif %}
                 </div>
             </div>
             {% if letter.reply_count > 0 %}

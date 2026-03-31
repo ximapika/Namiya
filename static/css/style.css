@@ -1308,7 +1308,7 @@ a { color: inherit; text-decoration: none; }
    ══════════════════════════════════════════════════════════════════ */
 .phone-info-box {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: .8rem;
   background: rgba(61,122,80,.07);
   border: 1px solid rgba(61,122,80,.2);
@@ -1317,8 +1317,16 @@ a { color: inherit; text-decoration: none; }
   margin-top: .8rem;
 }
 .phone-info-icon   { font-size: 1.5rem; flex-shrink: 0; }
+.phone-info-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .8rem;
+  flex: 1;
+}
+.phone-info-item { min-width: 0; }
 .phone-info-label  { font-size: .74rem; color: var(--c-text-muted); }
 .phone-info-number { font-size: 1.05rem; font-weight: 700; color: var(--c-success); letter-spacing: .08em; margin-top: .1rem; }
+.phone-info-value  { font-size: .96rem; font-weight: 600; color: var(--c-primary); margin-top: .1rem; }
 
 /* ══════════════════════════════════════════════════════════════════
    店员状态 / 申请回复
