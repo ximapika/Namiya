@@ -20,7 +20,8 @@
                     <span class="staff-name">{{ staff.username }}</span>
                     <span class="staff-since">加入于 {{ staff.created_at }}</span>
                 </div>
-                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
+                    {% include "_csrf.html" %}
                     <input type="hidden" name="username" value="{{ staff.username }}">
                     <input type="hidden" name="action" value="revoke">
                     <input type="hidden" name="redirect_to" value="staff">
@@ -41,12 +42,12 @@
     <!-- 账号查询 & 赋权 -->
     <div class="staff-section">
         <div class="section-title">查询账号</div>
-        <form class="filter-search" method="GET" action="{{ url_for('admin_staff') }}" style="margin-bottom:1.2rem;">
+        <form class="filter-search" method="GET" action="{{ url_for('admin.admin_staff') }}" style="margin-bottom:1.2rem;">
             <input class="search-input" type="text" name="search"
                    placeholder="输入用户名精确查询…" value="{{ search_user }}">
             <button type="submit" class="btn btn-primary btn-sm">查询</button>
             {% if search_user %}
-            <a href="{{ url_for('admin_staff') }}" class="btn btn-ghost btn-sm">清除</a>
+            <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-ghost btn-sm">清除</a>
             {% endif %}
         </form>
 
@@ -73,14 +74,16 @@
             {% if not search_result.is_admin %}
             <div style="margin-top:.8rem;">
                 {% if search_result.is_staff %}
-                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
+                    {% include "_csrf.html" %}
                     <input type="hidden" name="username" value="{{ search_result.username }}">
                     <input type="hidden" name="action" value="revoke">
                     <input type="hidden" name="redirect_to" value="staff">
                     <button type="submit" class="btn btn-ghost btn-sm">撤销店员权限</button>
                 </form>
                 {% else %}
-                <form method="POST" action="{{ url_for('grant_staff') }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
+                    {% include "_csrf.html" %}
                     <input type="hidden" name="username" value="{{ search_result.username }}">
                     <input type="hidden" name="action" value="grant">
                     <input type="hidden" name="redirect_to" value="staff">
@@ -97,7 +100,7 @@
                 </div>
                 <div class="user-history-list">
                     {% for h in search_history %}
-                    <a href="{{ url_for('admin_letter', letter_id=h.id) }}" class="history-item">
+                    <a href="{{ url_for('admin.admin_letter', letter_id=h.id) }}" class="history-item">
                         <span class="history-icon">
                             {% if h.type == 'phone' %}📞{% elif h.reply_count > 0 %}💌{% else %}✉️{% endif %}
                         </span>

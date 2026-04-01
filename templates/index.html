@@ -13,11 +13,11 @@
             </p>
             <div class="hero-actions hero-actions-left">
                 {% if session.user_id %}
-                    <a href="{{ url_for('write') }}" class="btn btn-primary">✍ 写信倾诉</a>
-                    <a href="{{ url_for('inbox') }}" class="btn btn-outline">📮 我的信箱</a>
+                    <a href="{{ url_for('user.write') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                    <a href="{{ url_for('user.inbox') }}" class="btn btn-outline">📮 我的信箱</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-primary">✍ 写信倾诉</a>
-                    <a href="{{ url_for('register') }}" class="btn btn-outline">注册账号</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">✍ 写信倾诉</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-outline">注册账号</a>
                 {% endif %}
             </div>
             <div class="hero-facts">
@@ -50,8 +50,8 @@
                             <span class="promo-badge">{{ slide.label }}</span>
                             <span class="promo-tone">{{ slide.tone }}</span>
                         </div>
-                        {% if slide.link %}
-                        <a href="{{ slide.link }}" class="btn btn-primary btn-sm">{{ slide.link_text }}</a>
+                        {% if slide.link_url %}
+                        <a href="{{ slide.link_url }}" class="btn btn-primary btn-sm">{{ slide.link_text }}</a>
                         {% endif %}
                     </div>
                 </article>
@@ -91,7 +91,8 @@
     </div>
     <div class="tone-grid">
         {% for theme in theme_options %}
-        <form method="POST" action="{{ url_for('set_theme') }}" class="tone-form">
+        <form method="POST" action="{{ url_for('public.set_theme') }}" class="tone-form">
+            {% include "_csrf.html" %}
             <input type="hidden" name="theme" value="{{ theme.key }}">
             <input type="hidden" name="next" value="{{ request.path }}">
             <button type="submit" class="tone-card{% if active_theme == theme.key %} is-active{% endif %}">

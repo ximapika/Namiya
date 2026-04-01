@@ -39,33 +39,33 @@
         <div class="filter-group">
             <span class="filter-label">状态</span>
             <div class="filter-tabs">
-                <a href="{{ url_for('admin_dashboard', status='all',     type=filter_type, search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status='all',     type=filter_type, search=search_user) }}"
                    class="filter-tab {% if filter_status == 'all' %}active{% endif %}">全部</a>
-                <a href="{{ url_for('admin_dashboard', status='pending', type=filter_type, search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status='pending', type=filter_type, search=search_user) }}"
                    class="filter-tab {% if filter_status == 'pending' %}active{% endif %}">待处理</a>
-                <a href="{{ url_for('admin_dashboard', status='replied', type=filter_type, search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status='replied', type=filter_type, search=search_user) }}"
                    class="filter-tab {% if filter_status == 'replied' %}active{% endif %}">已处理</a>
             </div>
         </div>
         <div class="filter-group">
             <span class="filter-label">类型</span>
             <div class="filter-tabs">
-                <a href="{{ url_for('admin_dashboard', status=filter_status, type='all',    search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status=filter_status, type='all',    search=search_user) }}"
                    class="filter-tab {% if filter_type == 'all' %}active{% endif %}">全部</a>
-                <a href="{{ url_for('admin_dashboard', status=filter_status, type='letter', search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status=filter_status, type='letter', search=search_user) }}"
                    class="filter-tab {% if filter_type == 'letter' %}active{% endif %}">✉️ 来信</a>
-                <a href="{{ url_for('admin_dashboard', status=filter_status, type='phone',  search=search_user) }}"
+                <a href="{{ url_for('admin.admin_dashboard', status=filter_status, type='phone',  search=search_user) }}"
                    class="filter-tab {% if filter_type == 'phone' %}active{% endif %}">📞 来电</a>
             </div>
         </div>
-        <form class="filter-search" method="GET" action="{{ url_for('admin_dashboard') }}">
+        <form class="filter-search" method="GET" action="{{ url_for('admin.admin_dashboard') }}">
             <input type="hidden" name="status" value="{{ filter_status }}">
             <input type="hidden" name="type"   value="{{ filter_type }}">
             <input class="search-input" type="text" name="search"
                    placeholder="搜索用户名…" value="{{ search_user }}">
             <button type="submit" class="btn btn-ghost btn-sm">搜索</button>
             {% if search_user %}
-            <a href="{{ url_for('admin_dashboard', status=filter_status, type=filter_type) }}"
+            <a href="{{ url_for('admin.admin_dashboard', status=filter_status, type=filter_type) }}"
                class="btn btn-ghost btn-sm">清除</a>
             {% endif %}
         </form>
@@ -80,16 +80,18 @@
             <div class="request-info">
                 <span class="request-staff">店员 <strong>{{ req.staff_name }}</strong></span>
                 <span class="sep">·</span>
-                申请回复信件：<a href="{{ url_for('admin_letter', letter_id=req.letter_id) }}" class="request-letter-link">{{ req.letter_title }}</a>
+                申请回复信件：<a href="{{ url_for('admin.admin_letter', letter_id=req.letter_id) }}" class="request-letter-link">{{ req.letter_title }}</a>
                 <span class="sep">·</span>
                 <span class="request-time">{{ req.created_at }}</span>
             </div>
             <div class="request-actions">
-                <form method="POST" action="{{ url_for('approve_reply', req_id=req.id) }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('admin.approve_reply', req_id=req.id) }}" style="display:inline;">
+                    {% include "_csrf.html" %}
                     <input type="hidden" name="action" value="approve">
                     <button type="submit" class="btn btn-success btn-xs">批准</button>
                 </form>
-                <form method="POST" action="{{ url_for('approve_reply', req_id=req.id) }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('admin.approve_reply', req_id=req.id) }}" style="display:inline;">
+                    {% include "_csrf.html" %}
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="btn btn-danger btn-xs">拒绝</button>
                 </form>
@@ -103,7 +105,7 @@
     {% if session.is_admin %}
     <div class="grant-staff-section">
         <div class="grant-staff-title">👥 店员管理</div>
-        <a href="{{ url_for('admin_staff') }}" class="btn btn-primary btn-sm">进入店员管理页面</a>
+        <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-primary btn-sm">进入店员管理页面</a>
     </div>
     {% endif %}
 
@@ -111,7 +113,7 @@
     {% if letters %}
     <div class="letter-list-admin">
         {% for letter in letters %}
-        <a href="{{ url_for('admin_letter', letter_id=letter.id) }}" class="admin-letter-item">
+        <a href="{{ url_for('admin.admin_letter', letter_id=letter.id) }}" class="admin-letter-item">
             <span class="letter-item-icon">
                 {% if letter.type == 'phone' %}
                     📞

@@ -10,7 +10,7 @@
 </head>
 <body data-theme="{{ active_theme }}">
     <nav class="navbar">
-        <a href="{{ url_for('index') }}" class="navbar-brand">
+        <a href="{{ url_for('public.index') }}" class="navbar-brand">
             <span class="brand-icon">✉</span>
             <span class="brand-name">解忧杂货铺</span>
         </a>
@@ -18,20 +18,20 @@
             {% if session.user_id %}
                 {% if session.is_admin %}
                     <span class="role-badge role-admin">店长</span>
-                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">📬 信件管理</a>
-                    <a href="{{ url_for('admin_staff') }}" class="nav-link">👥 店员管理</a>
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link">📬 信件管理</a>
+                    <a href="{{ url_for('admin.admin_staff') }}" class="nav-link">👥 店员管理</a>
                 {% elif session.is_staff %}
                     <span class="role-badge role-staff">店员</span>
-                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">📬 信件管理</a>
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link">📬 信件管理</a>
                 {% else %}
-                    <a href="{{ url_for('write') }}" class="nav-link">✍ 写信</a>
-                    <a href="{{ url_for('inbox') }}" class="nav-link">📮 我的信箱</a>
+                    <a href="{{ url_for('user.write') }}" class="nav-link">✍ 写信</a>
+                    <a href="{{ url_for('user.inbox') }}" class="nav-link">📮 我的信箱</a>
                 {% endif %}
                 <span class="nav-user">{{ session.username }}</span>
-                <a href="{{ url_for('logout') }}" class="nav-link btn-logout">退出</a>
+                <a href="{{ url_for('auth.logout') }}" class="nav-link btn-logout">退出</a>
             {% else %}
-                <a href="{{ url_for('login') }}" class="nav-link">登录</a>
-                <a href="{{ url_for('register') }}" class="nav-link btn-register">注册</a>
+                <a href="{{ url_for('auth.login') }}" class="nav-link">登录</a>
+                <a href="{{ url_for('auth.register') }}" class="nav-link btn-register">注册</a>
             {% endif %}
         </div>
     </nav>

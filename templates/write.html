@@ -9,6 +9,7 @@
     </div>
 
     <form method="POST" id="writeForm">
+        {% include "_csrf.html" %}
 
         <!-- 类型切换 -->
         <div class="type-switcher">
@@ -74,7 +75,7 @@
         </div>
 
         <div class="letter-actions">
-            <a href="{{ url_for('inbox') }}" class="btn btn-ghost">取消</a>
+            <a href="{{ url_for('user.inbox') }}" class="btn btn-ghost">取消</a>
             <button type="submit" class="btn btn-primary" id="submitBtn">📨 寄出这封信</button>
         </div>
     </form>

@@ -1,15 +1,37 @@
 # 解忧杂货铺
 
-一个基于 Flask + SQLite 的校园心理倾诉项目，面向“来信 / 来电登记 / 店员回复 / 店长管理”场景，支持账号隔离、店员权限审批，以及首页广告轮播和全站主题色切换。
+面向校园心理倾诉场景的 Flask Web 系统，支持来信、来电登记、店员回复、店长审批与权限管理。
 
-## 当前功能
+当前版本已从单文件 SQLite Demo 升级为更接近生产环境的结构：
 
-- 首页支持多图广告轮播、手动切换和自动播放。
-- 首页支持主题色切换，当前提供 `星夜月白 / 纸页琥珀 / 晨雾青岚` 三套风格。
-- 普通用户可注册、登录、写信、登记电话倾诉，并在自己的信箱查看回信。
-- 店长可查看全部来信来电、筛选状态、搜索账号、管理店员、审批或直接授予回复权限。
-- 店员可查看全部信件，但仅在获批后才能回复指定信件。
-- 来信人与来信人之间严格隔离，普通账号只能访问自己的信件和回复。
+- `app factory + blueprints`
+- `SQLAlchemy` 数据访问层
+- `PostgreSQL / SQLite` 双支持
+- `CSRF`、登录/写信限流、会话安全配置
+- 手机号与来电时间字段加密存储
+- `Gunicorn` 部署入口与环境变量配置
+- 兼容旧版 SQLite 数据并在初始化时自动补齐字段/加密历史号码
+
+## 目录结构
+
+```text
+app/
+  __init__.py
+  auth.py
+  bootstrap.py
+  cli.py
+  content.py
+  extensions.py
+  models.py
+  routes/
+  services/
+config.py
+run.py
+gunicorn.conf.py
+templates/
+static/
+instance/
+```
 
 ## 本地启动
 
@@ -21,100 +43,112 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. 启动服务：
+2. 配置环境变量：
 
 ```bash
-python app.py
+cp .env.example .env
 ```
 
-3. 浏览器访问：
+至少填写这些值：
+
+- `SECRET_KEY`
+- `PHONE_ENCRYPTION_KEY`
+- `BOOTSTRAP_ADMIN_USERNAME`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+
+开发环境如果缺少 `SECRET_KEY` 或 `PHONE_ENCRYPTION_KEY`，系统会在 `instance/` 下自动生成本地密钥文件；生产环境不会自动生成。
+
+3. 初始化数据库：
+
+```bash
+flask --app run.py init-db
+```
+
+4. 启动开发服务：
+
+```bash
+python run.py
+```
+
+访问地址：
 
 ```text
 http://127.0.0.1:50000
 ```
 
-默认店长账号：
+## 生产部署
 
-- 用户名：`admin`
-- 密码：`admin123`
+推荐使用 PostgreSQL，并显式配置 `DATABASE_URL`：
 
-正式部署前请至少修改：
-
-- `app.py` 中的 `app.secret_key`
-- 默认店长密码
-
-## 在 clab / 校园网环境部署
-
-项目默认监听：
-
-```text
-0.0.0.0:50000
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/worryshop
+APP_ENV=production
+SECRET_KEY=...
+PHONE_ENCRYPTION_KEY=...
+SESSION_COOKIE_SECURE=true
+ENABLE_HSTS=true
 ```
 
-在服务器上执行 `python app.py` 后，只要该端口已放行，就可以通过：
+初始化数据库：
 
-```text
-http://<服务器IP>:50000
+```bash
+flask --app run.py init-db
 ```
 
-从校园网浏览器访问。
+Gunicorn 启动：
 
-## 广告轮播如何扩展
-
-广告位配置集中在 [app.py](app.py) 的 `PROMO_SLIDES`。
-
-每一项都支持这些字段：
-
-- `label`：缩略选择卡标题
-- `eyebrow`：广告小标题
-- `title`：主标题
-- `description`：说明文字
-- `image`：静态图片路径，默认放在 `static/img/promos/`
-- `tone`：广告图的风格说明
-- `link`：可选跳转链接，不需要可留空
-- `link_text`：按钮文案
-
-新增广告图的方式：
-
-1. 把图片放到 `static/img/promos/`
-2. 在 `PROMO_SLIDES` 里新增一个字典
-3. 刷新首页即可进入轮播和下方选择器
-
-当前已接入的示例图：
-
-- `static/img/promos/c7ba9d7ccb8c822979aa3980c5b53bab.jpg`
-- `static/img/promos/c7ba9d7ccb8c822979aa3980c5b53bab-1.jpg`
-
-## 主题色如何调整
-
-主题配置集中在 [app.py](app.py) 的 `THEME_OPTIONS`，具体变量实现写在 [static/css/style.css](static/css/style.css)。
-
-如果要新增主题：
-
-1. 在 `THEME_OPTIONS` 里新增一个 `key / label / description / preview`
-2. 在 `style.css` 里增加对应的 `body[data-theme="..."]` 变量块
-3. 首页会自动出现新的主题卡片
-
-## 数据与权限说明
-
-- 用户账号存储在 `users` 表
-- 来信 / 来电登记存储在 `letters` 表
-- 店员 / 店长回复存储在 `replies` 表
-- 店员申请回复权限存储在 `reply_requests` 表
-
-权限边界：
-
-- 普通用户：只能查看自己的信件和回复
-- 店员：可查看全部，但不能私自回复
-- 店长：可查看全部并管理店员权限
-
-## 项目结构
-
-```text
-app.py
-templates/
-static/css/style.css
-static/js/home.js
-static/img/promos/
-worryshop.db
+```bash
+gunicorn -c gunicorn.conf.py run:app
 ```
+
+如果前面有 Nginx / 反向代理，应用已启用 `ProxyFix`。
+
+## 安全特性
+
+- 密码使用 `werkzeug.security` 哈希存储
+- `CSRFProtect` 覆盖全部表单 POST
+- `Flask-Limiter` 对登录、注册、写信和管理操作限流
+- Session Cookie 默认 `HttpOnly`，支持 `Secure` 与 `SameSite`
+- 手机号与来电时间使用 `Fernet` 加密后落库
+- 响应头默认加入 `CSP`、`X-Frame-Options`、`X-Content-Type-Options`
+- 登录重定向做了同源校验，避免开放重定向
+
+## 数据迁移说明
+
+如果仓库里已有旧版 `worryshop.db`：
+
+- 初始化时会自动补齐缺失字段
+- 旧版明文手机号和来电时间会自动迁移为加密存储
+- 旧数据表名和页面功能保持兼容
+
+## 管理命令
+
+初始化数据库：
+
+```bash
+flask --app run.py init-db
+```
+
+创建或重置店长账号：
+
+```bash
+flask --app run.py create-admin
+```
+
+## 重要配置项
+
+- `DATABASE_URL`：数据库连接串，生产建议 PostgreSQL
+- `SECRET_KEY`：Flask Session 与 CSRF 使用
+- `PHONE_ENCRYPTION_KEY`：Fernet 加密密钥
+- `LOGIN_RATE_LIMIT`：登录限流，例如 `10 per minute`
+- `WRITE_RATE_LIMIT`：写信/来电登记限流
+- `ADMIN_MUTATION_RATE_LIMIT`：后台写操作限流
+- `SESSION_COOKIE_SECURE`：HTTPS 部署时应设为 `true`
+- `RATELIMIT_STORAGE_URI`：多实例部署建议接 Redis，而不是默认 `memory://`
+
+## 并发与扩展建议
+
+- 开发环境默认可用 SQLite，但高并发生产环境应切换到 PostgreSQL
+- Gunicorn 默认启用多 worker + 多线程，见 [gunicorn.conf.py](/Users/ximapika/vscode/psychology/gunicorn.conf.py)
+- 如果要做多实例部署，`Flask-Limiter` 的存储后端应改为 Redis
+- 后续如果继续演进，建议补 Alembic 迁移和审计日志

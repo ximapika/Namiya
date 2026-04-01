@@ -9,6 +9,7 @@
         <p class="form-subtitle">加入解忧杂货铺，开始倾诉之旅</p>
     </div>
     <form method="POST" autocomplete="on">
+        {% include "_csrf.html" %}
         <div class="form-group">
             <label class="form-label" for="username">用户名</label>
             <input class="form-input" type="text" id="username" name="username"
@@ -32,7 +33,7 @@
         </div>
     </form>
     <div class="form-footer">
-        已有账号？<a href="{{ url_for('login') }}">直接登录</a>
+        已有账号？<a href="{{ url_for('auth.login') }}">直接登录</a>
     </div>
 </div>
 
