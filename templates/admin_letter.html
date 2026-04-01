@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="letter-view-container">
-    <a href="{{ url_for('admin_dashboard') }}" class="back-link">← 返回信件列表</a>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="back-link">← 返回信件列表</a>
 
     <!-- 来信/来电详情 -->
     <div class="letter-card">
@@ -70,8 +70,9 @@
     {% if session.is_admin %}
     <div class="reply-form-card" style="margin-bottom:1rem;">
         <div class="reply-form-title">🔑 赋予店员回复权限</div>
-        <form method="POST" action="{{ url_for('grant_reply_direct', letter_id=letter.id) }}"
+        <form method="POST" action="{{ url_for('admin.grant_reply_direct', letter_id=letter.id) }}"
               class="grant-staff-form" style="margin-top:.8rem;">
+            {% include "_csrf.html" %}
             <input class="form-input grant-input" type="text" name="staff_username"
                    placeholder="输入店员用户名" required>
             <button type="submit" class="btn btn-primary btn-sm">直接授权</button>
@@ -85,6 +86,7 @@
     <div class="reply-form-card">
         <div class="reply-form-title">✍ 回复</div>
         <form method="POST">
+            {% include "_csrf.html" %}
             <input type="hidden" name="action" value="reply">
             <div class="form-group">
                 <textarea class="form-input form-textarea" name="content"
@@ -114,6 +116,7 @@
             </div>
         </div>
         <form method="POST" style="margin-top:1rem;">
+            {% include "_csrf.html" %}
             <input type="hidden" name="action" value="request_reply">
             <button type="submit" class="btn btn-primary btn-sm">📋 申请回复权限</button>
         </form>
@@ -129,7 +132,7 @@
         </div>
         <div class="user-history-list">
             {% for h in user_history %}
-            <a href="{{ url_for('admin_letter', letter_id=h.id) }}" class="history-item">
+            <a href="{{ url_for('admin.admin_letter', letter_id=h.id) }}" class="history-item">
                 <span class="history-icon">
                     {% if h.type == 'phone' %}📞{% elif h.reply_count > 0 %}💌{% else %}✉️{% endif %}
                 </span>
