@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import create_app
 from app.bootstrap import bootstrap_database
 from app.extensions import db
-from app.models import Letter, Reply, User
+from app.models import Letter, Reply, ReplyRequest, User
 from config import BASE_DIR, build_app_config
 
 
@@ -107,6 +107,83 @@ class WorryShopAppTestCase(unittest.TestCase):
         detail = self.client.get(f"/admin/letter/{letter.id}")
         self.assertEqual(detail.status_code, 200)
         self.assertIn("测试来信", detail.get_data(as_text=True))
+
+    def test_admin_account_management_can_list_grant_and_delete_accounts(self):
+        admin = User(
+            username="admin",
+            password_hash=generate_password_hash("AdminPass123"),
+            is_admin=True,
+        )
+        staff = User(
+            username="staff",
+            password_hash=generate_password_hash("StaffPass123"),
+            is_staff=True,
+        )
+        user = User(
+            username="alice",
+            password_hash=generate_password_hash("Password123"),
+        )
+        promoted = User(
+            username="bob",
+            password_hash=generate_password_hash("Password456"),
+        )
+        db.session.add_all([admin, staff, user, promoted])
+        db.session.commit()
+
+        letter = Letter(user_id=user.id, title="测试来信", content="需要一点帮助", type="letter")
+        db.session.add(letter)
+        db.session.commit()
+        user_id = user.id
+        letter_id = letter.id
+
+        reply = Reply(letter_id=letter.id, admin_id=staff.id, content="我们在。")
+        request_record = ReplyRequest(letter_id=letter.id, staff_id=staff.id, status="approved")
+        db.session.add_all([reply, request_record])
+        db.session.commit()
+
+        response = self.client.post(
+            "/login",
+            data={"username": "admin", "password": "AdminPass123"},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        account_page = self.client.get("/admin/staff?selected=alice")
+        self.assertEqual(account_page.status_code, 200)
+        page_text = account_page.get_data(as_text=True)
+        self.assertIn("账号管理", page_text)
+        self.assertIn("alice", page_text)
+        self.assertIn("staff", page_text)
+        self.assertIn("bob", page_text)
+
+        grant_response = self.client.post(
+            "/admin/grant_staff",
+            data={
+                "username": "bob",
+                "action": "grant",
+                "redirect_to": "staff",
+                "selected": "bob",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(grant_response.status_code, 200)
+        self.assertIn("已授予 bob 店员权限", grant_response.get_data(as_text=True))
+        self.assertTrue(User.query.filter_by(username="bob").first().is_staff)
+
+        delete_response = self.client.post(
+            "/admin/delete_account",
+            data={
+                "username": "alice",
+                "selected": "alice",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertIn("账号 alice 及其相关记录已删除", delete_response.get_data(as_text=True))
+        self.assertIsNone(User.query.filter_by(username="alice").first())
+        self.assertEqual(Letter.query.filter_by(user_id=user_id).count(), 0)
+        self.assertEqual(Reply.query.filter_by(letter_id=letter_id).count(), 0)
+        self.assertEqual(ReplyRequest.query.filter_by(letter_id=letter_id).count(), 0)
 
     def test_database_url_is_resolved_from_environment_at_app_creation_time(self):
         with patch.dict(

@@ -23,6 +23,86 @@ def _reply_count_subquery():
     )
 
 
+def _user_letter_count_subquery():
+    return (
+        db.session.query(
+            Letter.user_id.label("user_id"),
+            func.count(Letter.id).label("letter_count"),
+        )
+        .group_by(Letter.user_id)
+        .subquery()
+    )
+
+
+def _user_reply_count_subquery():
+    return (
+        db.session.query(
+            Reply.admin_id.label("user_id"),
+            func.count(Reply.id).label("reply_count"),
+        )
+        .group_by(Reply.admin_id)
+        .subquery()
+    )
+
+
+def _load_user_history(user_id: int) -> list[Letter]:
+    reply_counts = _reply_count_subquery()
+    history_rows = (
+        db.session.query(Letter, reply_counts.c.reply_count)
+        .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
+        .filter(Letter.user_id == user_id)
+        .order_by(Letter.created_at.desc())
+        .all()
+    )
+
+    history = []
+    for letter, reply_count in history_rows:
+        letter.reply_count = int(reply_count or 0)
+        history.append(letter)
+    return history
+
+
+def _account_role_filter(query, role_filter: str):
+    if role_filter == "admin":
+        return query.filter(User.is_admin.is_(True))
+    if role_filter == "staff":
+        return query.filter(User.is_staff.is_(True), User.is_admin.is_(False))
+    if role_filter == "user":
+        return query.filter(User.is_admin.is_(False), User.is_staff.is_(False))
+    return query
+
+
+def _account_management_redirect(default_selected: str | None = None):
+    search_user = request.form.get("search", "").strip()
+    selected_user = normalize_username(request.form.get("selected", default_selected or ""))
+    role_filter = request.form.get("role", "all").strip()
+    if role_filter not in {"all", "admin", "staff", "user"}:
+        role_filter = "all"
+
+    params = {}
+    if search_user:
+        params["search"] = search_user
+    if role_filter != "all":
+        params["role"] = role_filter
+    if selected_user:
+        params["selected"] = selected_user
+    return redirect(url_for("admin.admin_staff", **params))
+
+
+def _delete_user_account(user: User) -> None:
+    letter_ids = [row[0] for row in db.session.query(Letter.id).filter(Letter.user_id == user.id).all()]
+
+    ReplyRequest.query.filter(ReplyRequest.staff_id == user.id).delete(synchronize_session=False)
+    Reply.query.filter(Reply.admin_id == user.id).delete(synchronize_session=False)
+
+    if letter_ids:
+        ReplyRequest.query.filter(ReplyRequest.letter_id.in_(letter_ids)).delete(synchronize_session=False)
+        Reply.query.filter(Reply.letter_id.in_(letter_ids)).delete(synchronize_session=False)
+        Letter.query.filter(Letter.id.in_(letter_ids)).delete(synchronize_session=False)
+
+    db.session.delete(user)
+
+
 @admin_bp.route("/admin")
 @staff_or_admin_required
 def admin_dashboard():
@@ -224,9 +304,14 @@ def approve_reply(req_id: int):
 
 
 @admin_bp.route("/admin/staff")
+@admin_bp.route("/admin/accounts")
 @admin_required
 def admin_staff():
     search_user = request.args.get("search", "").strip()
+    selected_username = normalize_username(request.args.get("selected", ""))
+    role_filter = request.args.get("role", "all").strip()
+    if role_filter not in {"all", "admin", "staff", "user"}:
+        role_filter = "all"
 
     staff_list = (
         User.query.filter_by(is_staff=True, is_admin=False)
@@ -234,30 +319,79 @@ def admin_staff():
         .all()
     )
 
-    search_result = None
-    search_history = []
+    total_accounts = db.session.query(func.count(User.id)).scalar() or 0
+    total_admins = db.session.query(func.count(User.id)).filter(User.is_admin.is_(True)).scalar() or 0
+    total_staff = (
+        db.session.query(func.count(User.id))
+        .filter(User.is_staff.is_(True), User.is_admin.is_(False))
+        .scalar()
+        or 0
+    )
+    total_users = (
+        db.session.query(func.count(User.id))
+        .filter(User.is_admin.is_(False), User.is_staff.is_(False))
+        .scalar()
+        or 0
+    )
+
+    letter_counts = _user_letter_count_subquery()
+    reply_counts = _user_reply_count_subquery()
+    account_query = (
+        db.session.query(User, letter_counts.c.letter_count, reply_counts.c.reply_count)
+        .outerjoin(letter_counts, User.id == letter_counts.c.user_id)
+        .outerjoin(reply_counts, User.id == reply_counts.c.user_id)
+    )
+    account_query = _account_role_filter(account_query, role_filter)
     if search_user:
-        search_result = User.query.filter_by(username=search_user).first()
-        if search_result:
-            reply_counts = _reply_count_subquery()
-            search_rows = (
-                db.session.query(Letter, reply_counts.c.reply_count)
-                .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
-                .filter(Letter.user_id == search_result.id)
-                .order_by(Letter.created_at.desc())
-                .all()
-            )
-            search_history = []
-            for letter, reply_count in search_rows:
-                letter.reply_count = int(reply_count or 0)
-                search_history.append(letter)
+        account_query = account_query.filter(User.username.ilike(f"%{search_user}%"))
+
+    account_rows = account_query.order_by(User.created_at.desc(), User.username.asc()).all()
+    account_list = []
+    exact_match = None
+    for account, letter_count, reply_count in account_rows:
+        account.letter_count = int(letter_count or 0)
+        account.reply_authored_count = int(reply_count or 0)
+        account_list.append(account)
+        if search_user and account.username == search_user:
+            exact_match = account
+
+    selected_user = None
+    if selected_username:
+        selected_user = User.query.filter_by(username=selected_username).first()
+    elif exact_match:
+        selected_user = exact_match
+
+    selected_history = []
+    selected_handled_count = 0
+    if selected_user:
+        selected_user.letter_count = getattr(
+            selected_user,
+            "letter_count",
+            Letter.query.filter_by(user_id=selected_user.id).count(),
+        )
+        selected_user.reply_authored_count = getattr(
+            selected_user,
+            "reply_authored_count",
+            Reply.query.filter_by(admin_id=selected_user.id).count(),
+        )
+        selected_history = _load_user_history(selected_user.id)
+        selected_handled_count = sum(1 for item in selected_history if item.reply_count > 0)
+        selected_username = selected_user.username
 
     return render_template(
         "admin_staff.html",
         staff_list=staff_list,
         search_user=search_user,
-        search_result=search_result,
-        search_history=search_history,
+        role_filter=role_filter,
+        total_accounts=total_accounts,
+        total_admins=total_admins,
+        total_staff=total_staff,
+        total_users=total_users,
+        account_list=account_list,
+        selected_user=selected_user,
+        selected_username=selected_username,
+        selected_history=selected_history,
+        selected_handled_count=selected_handled_count,
     )
 
 
@@ -284,7 +418,32 @@ def grant_staff():
 
     if redirect_to == "dashboard":
         return redirect(url_for("admin.admin_dashboard"))
-    return redirect(url_for("admin.admin_staff", search=username))
+    return _account_management_redirect(default_selected=username)
+
+
+@admin_bp.route("/admin/delete_account", methods=["POST"])
+@admin_required
+@limiter.limit("10 per minute", methods=["POST"], per_method=True)
+def delete_account():
+    username = normalize_username(request.form.get("username", ""))
+    user = User.query.filter_by(username=username).first()
+
+    if not user:
+        flash(f'用户 "{username}" 不存在', "error")
+        return _account_management_redirect()
+
+    if user.is_admin:
+        flash("店长账号不能删除", "warning")
+        return _account_management_redirect(default_selected=username)
+
+    if user.id == g.current_user.id:
+        flash("不能删除当前登录账号", "warning")
+        return _account_management_redirect(default_selected=username)
+
+    _delete_user_account(user)
+    db.session.commit()
+    flash(f"账号 {username} 及其相关记录已删除", "success")
+    return _account_management_redirect()
 
 
 @admin_bp.route("/admin/grant_reply_direct/<int:letter_id>", methods=["POST"])
