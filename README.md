@@ -164,3 +164,7 @@ flask --app run.py create-admin
 - Gunicorn 默认启用多 worker + 多线程，见 [gunicorn.conf.py](./gunicorn.conf.py)
 - 如果要做多实例部署，`Flask-Limiter` 的存储后端应改为 Redis
 - 后续如果继续演进，建议补 Alembic 迁移和审计日志(TODO)
+
+## 效果
+![alt text](<截屏2026-04-02 11.06.40.png>)
+![alt text](<截屏2026-04-02 11.28.39.png>) ![alt text](<截屏2026-04-02 11.28.49.png>) ![alt text](<截屏2026-04-02 11.29.05.png>) ![alt text](<截屏2026-04-02 11.29.14.png>)
