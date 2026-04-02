@@ -4,4 +4,4 @@
 /.env
 *.pyc
 worryshop.db
-/.vscode/
+.vscode/
