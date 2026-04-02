@@ -101,11 +101,11 @@
     </div>
     {% endif %}
 
-    <!-- 店员管理入口（仅店长可见） -->
+    <!-- 账号管理入口（仅店长可见） -->
     {% if session.is_admin %}
     <div class="grant-staff-section">
-        <div class="grant-staff-title">👥 店员管理</div>
-        <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-primary btn-sm">进入店员管理页面</a>
+        <div class="grant-staff-title">🗂️ 账号管理</div>
+        <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-primary btn-sm">进入账号管理页面</a>
     </div>
     {% endif %}
 

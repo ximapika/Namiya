@@ -1255,6 +1255,7 @@ a { color: inherit; text-decoration: none; }
 }
 .role-admin { background: rgba(200,146,42,.25); color: var(--c-accent-light); border: 1px solid rgba(200,146,42,.4); }
 .role-staff { background: rgba(61,122,80,.2);  color: #7EC89A; border: 1px solid rgba(61,122,80,.3); }
+.role-user  { background: var(--c-accent-dim); color: var(--c-text-muted); border: 1px solid var(--c-border); }
 
 /* ══════════════════════════════════════════════════════════════════
    写信页 · 类型切换
@@ -1458,6 +1459,75 @@ a { color: inherit; text-decoration: none; }
   gap: .5rem;
   font-size: 1rem;
 }
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+.account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--bg-main);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.account-item:hover {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
+}
+.account-item.is-selected {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-sm);
+}
+.account-item-main {
+  min-width: 0;
+  flex: 1;
+}
+.account-meta-line {
+  margin-top: .28rem;
+  font-size: .8rem;
+  color: var(--c-text-muted);
+}
+.account-item-actions {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.account-static-hint {
+  font-size: .78rem;
+  color: var(--c-text-muted);
+}
+.account-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+}
+.account-summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: .9rem 1rem;
+  text-align: center;
+}
+.account-summary-value {
+  font-family: var(--font-title);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--c-primary);
+}
+.account-summary-label {
+  margin-top: .3rem;
+  font-size: .76rem;
+  color: var(--c-text-muted);
+}
 
 /* ══════════════════════════════════════════════════════════════════
    响应式
@@ -1493,4 +1563,7 @@ a { color: inherit; text-decoration: none; }
   .grant-staff-form  { flex-direction: column; align-items: flex-start; }
   .grant-input       { width: 100%; }
   .request-item      { flex-direction: column; align-items: flex-start; }
+  .account-item      { flex-direction: column; align-items: flex-start; }
+  .account-item-actions { width: 100%; justify-content: flex-start; }
+  .search-result-header { flex-direction: column; align-items: flex-start; }
 }

@@ -1,14 +1,32 @@
 {% extends "base.html" %}
-{% block title %}店员管理{% endblock %}
+{% block title %}账号管理{% endblock %}
 {% block content %}
 
 <div class="admin-container">
     <div class="page-header">
-        <h1 class="page-title">👥 店员管理</h1>
+        <h1 class="page-title">🗂️ 账号管理</h1>
         <span class="page-meta">店长：{{ session.username }}</span>
     </div>
 
-    <!-- 当前店员列表 -->
+    <div class="admin-stats">
+        <div class="stat-card">
+            <div class="stat-num">{{ total_accounts }}</div>
+            <div class="stat-label">注册账号</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">{{ total_users }}</div>
+            <div class="stat-label">普通用户</div>
+        </div>
+        <div class="stat-card stat-card-replied">
+            <div class="stat-num">{{ total_staff }}</div>
+            <div class="stat-label">店员</div>
+        </div>
+        <div class="stat-card stat-card-pending">
+            <div class="stat-num">{{ total_admins }}</div>
+            <div class="stat-label">店长</div>
+        </div>
+    </div>
+
     <div class="staff-section">
         <div class="section-title">当前店员（{{ staff_list | length }}）</div>
         {% if staff_list %}
@@ -18,16 +36,20 @@
                 <div class="staff-item-info">
                     <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
                     <span class="staff-name">{{ staff.username }}</span>
-                    <span class="staff-since">加入于 {{ staff.created_at }}</span>
+                    <span class="staff-since">注册于 {{ staff.created_at }}</span>
                 </div>
-                <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
-                    {% include "_csrf.html" %}
-                    <input type="hidden" name="username" value="{{ staff.username }}">
-                    <input type="hidden" name="action" value="revoke">
-                    <input type="hidden" name="redirect_to" value="staff">
-                    <button type="submit" class="btn btn-ghost btn-xs"
-                            onclick="return confirm('确认撤销 {{ staff.username }} 的店员权限？')">撤销权限</button>
-                </form>
+                <div class="account-item-actions">
+                    <a href="{{ url_for('admin.admin_staff', selected=staff.username) }}" class="btn btn-ghost btn-xs">查看记录</a>
+                    <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
+                        {% include "_csrf.html" %}
+                        <input type="hidden" name="username" value="{{ staff.username }}">
+                        <input type="hidden" name="action" value="revoke">
+                        <input type="hidden" name="redirect_to" value="staff">
+                        <input type="hidden" name="selected" value="{{ staff.username }}">
+                        <button type="submit" class="btn btn-ghost btn-xs"
+                                onclick="return confirm('确认撤销 {{ staff.username }} 的店员权限？')">撤销权限</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -39,67 +61,172 @@
         {% endif %}
     </div>
 
-    <!-- 账号查询 & 赋权 -->
     <div class="staff-section">
-        <div class="section-title">查询账号</div>
-        <form class="filter-search" method="GET" action="{{ url_for('admin.admin_staff') }}" style="margin-bottom:1.2rem;">
-            <input class="search-input" type="text" name="search"
-                   placeholder="输入用户名精确查询…" value="{{ search_user }}">
-            <button type="submit" class="btn btn-primary btn-sm">查询</button>
-            {% if search_user %}
-            <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-ghost btn-sm">清除</a>
-            {% endif %}
-        </form>
+        <div class="section-title">全部账号</div>
 
-        {% if search_user and search_result is none %}
-        <div class="empty-state" style="padding:1.5rem 0;">
-            <p class="empty-text">未找到用户 "{{ search_user }}"</p>
+        <div class="filter-bar">
+            <div class="filter-group">
+                <span class="filter-label">身份</span>
+                <div class="filter-tabs">
+                    <a href="{{ url_for('admin.admin_staff', search=search_user or None) }}"
+                       class="filter-tab {% if role_filter == 'all' %}active{% endif %}">全部</a>
+                    <a href="{{ url_for('admin.admin_staff', role='user', search=search_user or None) }}"
+                       class="filter-tab {% if role_filter == 'user' %}active{% endif %}">普通用户</a>
+                    <a href="{{ url_for('admin.admin_staff', role='staff', search=search_user or None) }}"
+                       class="filter-tab {% if role_filter == 'staff' %}active{% endif %}">店员</a>
+                    <a href="{{ url_for('admin.admin_staff', role='admin', search=search_user or None) }}"
+                       class="filter-tab {% if role_filter == 'admin' %}active{% endif %}">店长</a>
+                </div>
+            </div>
+            <form class="filter-search" method="GET" action="{{ url_for('admin.admin_staff') }}">
+                <input type="hidden" name="role" value="{{ role_filter }}">
+                <input class="search-input" type="text" name="search"
+                       placeholder="搜索用户名…" value="{{ search_user }}">
+                <button type="submit" class="btn btn-ghost btn-sm">搜索</button>
+                {% if search_user or role_filter != 'all' %}
+                <a href="{{ url_for('admin.admin_staff') }}" class="btn btn-ghost btn-sm">清除</a>
+                {% endif %}
+            </form>
         </div>
-        {% elif search_result %}
+
+        {% if account_list %}
+        <div class="account-list">
+            {% for account in account_list %}
+            <div class="account-item {% if selected_user and selected_user.id == account.id %}is-selected{% endif %}">
+                <div class="account-item-main">
+                    <div class="search-result-name">
+                        <strong>{{ account.username }}</strong>
+                        {% if account.is_admin %}
+                        <span class="role-badge role-admin" style="font-size:.75rem;">店长</span>
+                        {% elif account.is_staff %}
+                        <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
+                        {% else %}
+                        <span class="role-badge role-user" style="font-size:.75rem;">普通用户</span>
+                        {% endif %}
+                    </div>
+                    <div class="account-meta-line">
+                        <span>注册于 {{ account.created_at }}</span>
+                        <span class="sep">·</span>
+                        <span>来信/来电 {{ account.letter_count }}</span>
+                        {% if account.reply_authored_count > 0 %}
+                        <span class="sep">·</span>
+                        <span>回信 {{ account.reply_authored_count }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="account-item-actions">
+                    <a href="{{ url_for('admin.admin_staff', search=search_user or None, role=None if role_filter == 'all' else role_filter, selected=account.username) }}"
+                       class="btn btn-ghost btn-xs">查看记录</a>
+                    {% if not account.is_admin %}
+                    <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
+                        {% include "_csrf.html" %}
+                        <input type="hidden" name="username" value="{{ account.username }}">
+                        <input type="hidden" name="action" value="{% if account.is_staff %}revoke{% else %}grant{% endif %}">
+                        <input type="hidden" name="redirect_to" value="staff">
+                        <input type="hidden" name="search" value="{{ search_user }}">
+                        <input type="hidden" name="role" value="{{ role_filter }}">
+                        <input type="hidden" name="selected" value="{{ account.username }}">
+                        <button type="submit" class="btn {% if account.is_staff %}btn-ghost{% else %}btn-primary{% endif %} btn-xs">
+                            {% if account.is_staff %}撤销店员{% else %}授予店员{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.delete_account') }}" style="display:inline;">
+                        {% include "_csrf.html" %}
+                        <input type="hidden" name="username" value="{{ account.username }}">
+                        <input type="hidden" name="search" value="{{ search_user }}">
+                        <input type="hidden" name="role" value="{{ role_filter }}">
+                        <input type="hidden" name="selected" value="{{ account.username }}">
+                        <button type="submit" class="btn btn-danger btn-xs"
+                                onclick="return confirm('确认删除账号 {{ account.username }}？这会同时删除其来信、来电、回信与权限申请记录。')">删除账号</button>
+                    </form>
+                    {% else %}
+                    <span class="account-static-hint">
+                        {% if account.id == session.user_id %}当前店长账号不可删除{% else %}店长账号不可删除{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2.4rem 0;">
+            <div class="empty-icon">🔍</div>
+            <p class="empty-text">没有符合条件的账号</p>
+            <p class="empty-hint">
+                {% if search_user %}未找到与 "{{ search_user }}" 相关的用户名{% else %}当前筛选下暂无账号{% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if selected_user %}
+    <div class="staff-section">
+        <div class="section-title">账号详情</div>
         <div class="search-result-card">
             <div class="search-result-header">
                 <div class="search-result-name">
-                    <strong>{{ search_result.username }}</strong>
-                    {% if search_result.is_admin %}
+                    <strong>{{ selected_user.username }}</strong>
+                    {% if selected_user.is_admin %}
                     <span class="role-badge role-admin" style="font-size:.75rem;">店长</span>
-                    {% elif search_result.is_staff %}
+                    {% elif selected_user.is_staff %}
                     <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
                     {% else %}
-                    <span class="role-badge" style="font-size:.75rem;background:var(--c-accent-dim);color:var(--c-text-muted);">普通用户</span>
+                    <span class="role-badge role-user" style="font-size:.75rem;">普通用户</span>
                     {% endif %}
                 </div>
-                <span class="staff-since">注册于 {{ search_result.created_at }}</span>
+                <span class="staff-since">注册于 {{ selected_user.created_at }}</span>
             </div>
 
-            {% if not search_result.is_admin %}
-            <div style="margin-top:.8rem;">
-                {% if search_result.is_staff %}
+            <div class="account-summary-grid">
+                <div class="account-summary-card">
+                    <div class="account-summary-value">{{ selected_user.letter_count }}</div>
+                    <div class="account-summary-label">来信/来电</div>
+                </div>
+                <div class="account-summary-card">
+                    <div class="account-summary-value">{{ selected_handled_count }}</div>
+                    <div class="account-summary-label">已处理交流</div>
+                </div>
+                <div class="account-summary-card">
+                    <div class="account-summary-value">{{ selected_user.reply_authored_count }}</div>
+                    <div class="account-summary-label">发出回信</div>
+                </div>
+            </div>
+
+            <div class="account-item-actions" style="margin-top:1rem;">
+                {% if not selected_user.is_admin %}
                 <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
                     {% include "_csrf.html" %}
-                    <input type="hidden" name="username" value="{{ search_result.username }}">
-                    <input type="hidden" name="action" value="revoke">
+                    <input type="hidden" name="username" value="{{ selected_user.username }}">
+                    <input type="hidden" name="action" value="{% if selected_user.is_staff %}revoke{% else %}grant{% endif %}">
                     <input type="hidden" name="redirect_to" value="staff">
-                    <button type="submit" class="btn btn-ghost btn-sm">撤销店员权限</button>
+                    <input type="hidden" name="search" value="{{ search_user }}">
+                    <input type="hidden" name="role" value="{{ role_filter }}">
+                    <input type="hidden" name="selected" value="{{ selected_user.username }}">
+                    <button type="submit" class="btn {% if selected_user.is_staff %}btn-ghost{% else %}btn-primary{% endif %} btn-sm">
+                        {% if selected_user.is_staff %}撤销店员权限{% else %}授予店员权限{% endif %}
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.delete_account') }}" style="display:inline;">
+                    {% include "_csrf.html" %}
+                    <input type="hidden" name="username" value="{{ selected_user.username }}">
+                    <input type="hidden" name="search" value="{{ search_user }}">
+                    <input type="hidden" name="role" value="{{ role_filter }}">
+                    <input type="hidden" name="selected" value="{{ selected_user.username }}">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('确认删除账号 {{ selected_user.username }}？这会同时删除其来信、来电、回信与权限申请记录。')">删除账号</button>
                 </form>
                 {% else %}
-                <form method="POST" action="{{ url_for('admin.grant_staff') }}" style="display:inline;">
-                    {% include "_csrf.html" %}
-                    <input type="hidden" name="username" value="{{ search_result.username }}">
-                    <input type="hidden" name="action" value="grant">
-                    <input type="hidden" name="redirect_to" value="staff">
-                    <button type="submit" class="btn btn-primary btn-sm">授予店员权限</button>
-                </form>
+                <span class="account-static-hint">店长账号不支持删除或降级</span>
                 {% endif %}
             </div>
-            {% endif %}
 
-            {% if search_history %}
+            {% if selected_history %}
             <div class="user-history-section" style="margin-top:1.2rem;">
                 <div class="user-history-title">
-                    <span>📁</span> 历史来信来电（{{ search_history | length }} 条）
+                    <span>📁</span> 历史来信来电（{{ selected_history | length }} 条）
                 </div>
                 <div class="user-history-list">
-                    {% for h in search_history %}
+                    {% for h in selected_history %}
                     <a href="{{ url_for('admin.admin_letter', letter_id=h.id) }}" class="history-item">
                         <span class="history-icon">
                             {% if h.type == 'phone' %}📞{% elif h.reply_count > 0 %}💌{% else %}✉️{% endif %}
@@ -125,11 +252,11 @@
                 </div>
             </div>
             {% else %}
-            <div style="margin-top:.8rem;color:var(--c-text-muted);font-size:.9rem;">该用户暂无来信来电记录</div>
+            <div style="margin-top:1rem;color:var(--c-text-muted);font-size:.9rem;">该用户暂无来信来电记录</div>
             {% endif %}
         </div>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 
 {% endblock %}
