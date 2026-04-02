@@ -48,6 +48,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+或者
+```bash
+conda create -n psy python=3.10
+conda activate psy
+pip install -r requirements.txt
+```
 
 2. 配置环境变量：
 
@@ -143,7 +149,7 @@ flask --app run.py create-admin
 
 ## 重要配置项
 
-- `DATABASE_URL`：数据库连接串，生产建议 PostgreSQL
+- `DATABASE_URL`：数据库连接串，高并发建议 PostgreSQL
 - `SECRET_KEY`：Flask Session 与 CSRF 使用
 - `PHONE_ENCRYPTION_KEY`：Fernet 加密密钥
 - `LOGIN_RATE_LIMIT`：登录限流，例如 `10 per minute`
@@ -154,7 +160,7 @@ flask --app run.py create-admin
 
 ## 并发与扩展建议
 
-- 开发环境默认可用 SQLite，但高并发生产环境应切换到 PostgreSQL
-- Gunicorn 默认启用多 worker + 多线程，见 [gunicorn.conf.py](/Users/ximapika/vscode/psychology/gunicorn.conf.py)
+- 开发环境默认可用 SQLite，但高并发环境建议切换到 PostgreSQL
+- Gunicorn 默认启用多 worker + 多线程，见 [gunicorn.conf.py](./gunicorn.conf.py)
 - 如果要做多实例部署，`Flask-Limiter` 的存储后端应改为 Redis
-- 后续如果继续演进，建议补 Alembic 迁移和审计日志
+- 后续如果继续演进，建议补 Alembic 迁移和审计日志(TODO)
