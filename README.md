@@ -166,5 +166,5 @@ flask --app run.py create-admin
 - 后续如果继续演进，建议补 Alembic 迁移和审计日志(TODO)
 
 ## 效果
-![alt text](<截屏2026-04-02 11.06.40.png>)
-![alt text](<截屏2026-04-02 11.28.39.png>) ![alt text](<截屏2026-04-02 11.28.49.png>) ![alt text](<截屏2026-04-02 11.29.05.png>) ![alt text](<截屏2026-04-02 11.29.14.png>)
+![alt text](<img/截屏2026-04-02 11.06.40.png>)
+![alt text](<img/截屏2026-04-02 11.28.39.png>) ![alt text](<img/截屏2026-04-02 11.28.49.png>) ![alt text](<img/截屏2026-04-02 11.29.05.png>) ![alt text](<img/截屏2026-04-02 11.29.14.png>)
