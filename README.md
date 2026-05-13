@@ -96,7 +96,7 @@ python run.py
 http://127.0.0.1:50000
 ```
 
-## 生产部署
+## 部署
 
 推荐使用 PostgreSQL，并显式配置 `DATABASE_URL`：
 
