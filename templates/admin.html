@@ -82,7 +82,7 @@
                 <span class="sep">·</span>
                 申请回复信件：<a href="{{ url_for('admin.admin_letter', letter_id=req.letter_id) }}" class="request-letter-link">{{ req.letter_title }}</a>
                 <span class="sep">·</span>
-                <span class="request-time">{{ req.created_at }}</span>
+                <span class="request-time">{{ req.created_at | localtime }}</span>
             </div>
             <div class="request-actions">
                 <form method="POST" action="{{ url_for('admin.approve_reply', req_id=req.id) }}" style="display:inline;">
@@ -135,7 +135,7 @@
                 <div class="letter-sender">
                     来自：<strong>{{ letter.username }}</strong>
                     <span class="sep">·</span>
-                    {{ letter.created_at }}
+                    {{ letter.created_at | localtime }}
                     {% if letter.type == 'phone' and letter.preferred_call_time %}
                     <span class="sep">·</span>
                     希望来电：{{ letter.preferred_call_time }}

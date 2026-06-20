@@ -21,7 +21,7 @@
                     来自：<strong>{{ letter.username }}</strong>
                 </div>
             </div>
-            <span class="letter-card-date">{{ letter.created_at }}</span>
+            <span class="letter-card-date">{{ letter.created_at | localtime }}</span>
         </div>
 
         {% if letter.type == 'phone' %}
@@ -58,7 +58,7 @@
         <div class="reply-card">
             <div class="reply-header">
                 <span class="reply-from">店员 {{ reply.admin_name }}</span>
-                <span>{{ reply.created_at }}</span>
+                <span>{{ reply.created_at | localtime }}</span>
             </div>
             <div class="reply-body">{{ reply.content }}</div>
         </div>
@@ -145,7 +145,7 @@
                         {% endif %}
                         <span class="history-title">{{ h.title }}</span>
                     </div>
-                    <div class="history-meta">{{ h.created_at }}</div>
+                    <div class="history-meta">{{ h.created_at | localtime }}</div>
                 </div>
                 {% if h.reply_count > 0 %}
                 <span class="letter-badge badge-replied">已处理</span>

@@ -36,7 +36,7 @@
                 <div class="staff-item-info">
                     <span class="role-badge role-staff" style="font-size:.75rem;">店员</span>
                     <span class="staff-name">{{ staff.username }}</span>
-                    <span class="staff-since">注册于 {{ staff.created_at }}</span>
+                    <span class="staff-since">注册于 {{ staff.created_at | localtime }}</span>
                 </div>
                 <div class="account-item-actions">
                     <a href="{{ url_for('admin.admin_staff', selected=staff.username) }}" class="btn btn-ghost btn-xs">查看记录</a>
@@ -105,7 +105,7 @@
                         {% endif %}
                     </div>
                     <div class="account-meta-line">
-                        <span>注册于 {{ account.created_at }}</span>
+                        <span>注册于 {{ account.created_at | localtime }}</span>
                         <span class="sep">·</span>
                         <span>来信/来电 {{ account.letter_count }}</span>
                         {% if account.reply_authored_count > 0 %}
@@ -174,7 +174,7 @@
                     <span class="role-badge role-user" style="font-size:.75rem;">普通用户</span>
                     {% endif %}
                 </div>
-                <span class="staff-since">注册于 {{ selected_user.created_at }}</span>
+                <span class="staff-since">注册于 {{ selected_user.created_at | localtime }}</span>
             </div>
 
             <div class="account-summary-grid">
@@ -240,7 +240,7 @@
                                 {% endif %}
                                 <span class="history-title">{{ h.title }}</span>
                             </div>
-                            <div class="history-meta">{{ h.created_at }}</div>
+                            <div class="history-meta">{{ h.created_at | localtime }}</div>
                         </div>
                         {% if h.reply_count > 0 %}
                         <span class="letter-badge badge-replied">已处理</span>

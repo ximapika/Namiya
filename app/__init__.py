@@ -1,5 +1,7 @@
 import os
+from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import Flask, g, request, session
 from dotenv import load_dotenv
@@ -75,6 +77,24 @@ def create_app(config_name: str | None = None, test_config: dict | None = None) 
             "active_theme": active_theme_name(),
             "theme_options": THEME_OPTIONS,
         }
+
+    @app.template_filter("localtime")
+    def localtime_filter(value, fmt="%Y-%m-%d %H:%M"):
+        """Render a naive UTC datetime in the configured display timezone."""
+        if value is None:
+            return ""
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            return str(value)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=dt_timezone.utc)
+        tz_name = app.config.get("DISPLAY_TIMEZONE", "Asia/Shanghai")
+        try:
+            local = dt.astimezone(ZoneInfo(tz_name))
+        except Exception:
+            local = dt
+        return local.strftime(fmt)
 
     @app.after_request
     def apply_security_headers(response):

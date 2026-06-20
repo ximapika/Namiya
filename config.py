@@ -113,4 +113,5 @@ def build_app_config(config_name: str) -> dict:
         "PREFERRED_URL_SCHEME": os.getenv("PREFERRED_URL_SCHEME", "https"),
         "ENABLE_HSTS": _env_flag("ENABLE_HSTS"),
         "REQUIRE_RUNTIME_SECRETS": production or _env_flag("REQUIRE_RUNTIME_SECRETS"),
+        "DISPLAY_TIMEZONE": os.getenv("DISPLAY_TIMEZONE", "Asia/Shanghai"),
     }
