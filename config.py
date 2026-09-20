@@ -82,7 +82,8 @@ def build_app_config(config_name: str) -> dict:
     database_uri = resolve_database_uri(selected)
 
     return {
-        "DEBUG": not testing and not production,
+        "DEBUG": False,
+        "TRUST_PROXY": _env_flag("TRUST_PROXY"),
         "TESTING": testing,
         "SECRET_KEY": os.getenv("SECRET_KEY"),
         "SQLALCHEMY_DATABASE_URI": database_uri,

@@ -20,7 +20,10 @@ from .services.runtime import ensure_runtime_secrets
 def create_app(config_name: str | None = None, test_config: dict | None = None) -> Flask:
     project_root = Path(__file__).resolve().parent.parent
     load_dotenv(project_root / ".env")
-    from config import build_app_config
+    if "." in __package__:
+        from ..config import build_app_config
+    else:
+        from config import build_app_config
 
     app = Flask(
         __name__,
@@ -38,7 +41,8 @@ def create_app(config_name: str | None = None, test_config: dict | None = None) 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     ensure_runtime_secrets(app)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    if app.config["TRUST_PROXY"]:
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=0)
 
     db.init_app(app)
     csrf.init_app(app)
@@ -94,6 +98,9 @@ def create_app(config_name: str | None = None, test_config: dict | None = None) 
             "frame-ancestors 'none'",
         ]
         response.headers.setdefault("Content-Security-Policy", "; ".join(csp))
+
+        if request.endpoint != "static":
+            response.headers["Cache-Control"] = "no-store"
 
         if app.config.get("ENABLE_HSTS") and request.is_secure:
             response.headers.setdefault(

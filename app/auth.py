@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from functools import wraps
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from flask import flash, g, redirect, request, session, url_for
 
@@ -39,11 +39,16 @@ def _redirect_to_login(message: str):
 def safe_redirect_target(target: str | None) -> str | None:
     if not target:
         return None
-    ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target))
-    if test_url.scheme in {"http", "https"} and ref_url.netloc == test_url.netloc:
-        return target
-    return None
+    # Only root-relative paths: browsers normalize backslashes/control characters.
+    if not target.startswith("/") or target.startswith("//"):
+        return None
+    if "\\" in target or any(ord(char) < 32 or ord(char) == 127 for char in target):
+        return None
+    parsed = urlparse(target)
+    if parsed.scheme or parsed.netloc:
+        return None
+    return target
+
 
 
 def login_required(view: Callable):

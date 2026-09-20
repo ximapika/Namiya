@@ -7,3 +7,12 @@ worryshop.db
 .vscode/
 request.md
 more.md
+
+.DS_Store
+.venv/
+*.db
+*.db-*
+*.sqlite*
+*.key
+.env.*
+!.env.example

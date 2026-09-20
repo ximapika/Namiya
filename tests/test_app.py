@@ -210,7 +210,7 @@ class WorryShopAppTestCase(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "DATABASE_URL is required in production"):
                 build_app_config("production")
 
-    def test_bootstrap_admin_password_from_environment_updates_existing_user(self):
+    def test_bootstrap_does_not_change_existing_credentials_or_roles(self):
         with patch.dict(
             os.environ,
             {
@@ -238,9 +238,9 @@ class WorryShopAppTestCase(unittest.TestCase):
 
             refreshed = User.query.filter_by(username="bootstrap-admin").first()
             self.assertIsNotNone(refreshed)
-            self.assertTrue(refreshed.is_admin)
-            self.assertFalse(refreshed.is_staff)
-            self.assertTrue(check_password_hash(refreshed.password_hash, "EnvPass123"))
+            self.assertFalse(refreshed.is_admin)
+            self.assertTrue(refreshed.is_staff)
+            self.assertTrue(check_password_hash(refreshed.password_hash, "OldPass123"))
         finally:
             db.session.remove()
             db.drop_all()

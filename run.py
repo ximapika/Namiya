@@ -1,8 +1,12 @@
 import logging
 import sys
 
-from app import create_app
-from app.bootstrap import bootstrap_database
+if __package__:
+    from .app import create_app
+    from .app.bootstrap import bootstrap_database
+else:
+    from app import create_app
+    from app.bootstrap import bootstrap_database
 
 
 logging.basicConfig(

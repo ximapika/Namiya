@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
 
 from .extensions import db
 from .models import Letter, ReplyRequest, User
@@ -54,30 +54,22 @@ def _ensure_indexes() -> None:
 
 
 def _encrypt_legacy_phone_data() -> None:
-    letters = (
-        Letter.query.filter(Letter.type == "phone")
-        .filter(Letter.phone_number_raw.isnot(None))
-        .all()
-    )
+    from .extensions import phone_cipher
 
-    changed = 0
+    letters = Letter.query.all()
+    # Preflight all ciphertext before changing any data, including fields on
+    # old records whose type/phone number was absent.
+    pending = []
     for letter in letters:
-        if not letter.phone_number_raw:
-            continue
-        if not letter.phone_number_is_encrypted:
-            plain_phone = letter.phone_number_raw.strip()
-            if plain_phone:
-                letter.phone_number = plain_phone
-                changed += 1
-
-        if letter.preferred_call_time_raw and not letter.preferred_call_time_is_encrypted:
-            plain_time = letter.preferred_call_time_raw.strip()
-            if plain_time:
-                letter.preferred_call_time = plain_time
-                changed += 1
-
-    if changed:
-        logger.info("Encrypted %s legacy phone/contact fields.", changed)
+        for raw_name, name in (("phone_number_raw", "phone_number"),
+                               ("preferred_call_time_raw", "preferred_call_time")):
+            value = getattr(letter, raw_name)
+            if value and not phone_cipher.is_encrypted(value):
+                pending.append((letter, name, value))
+    for letter, name, value in pending:
+        setattr(letter, name, value)
+    if pending:
+        logger.info("Encrypted %s legacy phone/contact fields.", len(pending))
 
 
 def _ensure_bootstrap_admin() -> None:
@@ -90,18 +82,7 @@ def _ensure_bootstrap_admin() -> None:
 
     existing = User.query.filter_by(username=username).first()
     if existing:
-        changed = False
-        if not existing.is_admin or existing.is_staff:
-            existing.is_admin = True
-            existing.is_staff = False
-            changed = True
-            logger.info("Promoted existing account %s to admin.", username)
-        if not check_password_hash(existing.password_hash, password):
-            existing.password_hash = generate_password_hash(password)
-            changed = True
-            logger.info("Updated bootstrap admin password for %s from environment.", username)
-        if changed:
-            db.session.commit()
+        logger.info("Bootstrap account already exists; leaving credentials and roles unchanged.")
         return
 
     admin = User(

@@ -1,5 +1,6 @@
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
+from ..auth import safe_redirect_target
 from ..content import DEFAULT_THEME, THEME_OPTION_MAP, build_promo_slides
 
 
@@ -20,4 +21,4 @@ def set_theme():
         session.pop("theme_name", None)
 
     target = request.form.get("next") or request.referrer or url_for("public.index")
-    return redirect(target)
+    return redirect(safe_redirect_target(target) or url_for("public.index"))
