@@ -32,7 +32,7 @@
                         <span class="letter-item-title">{{ letter.title }}</span>
                     </div>
                     <div class="letter-item-meta">
-                        {{ letter.created_at }}
+                        {{ letter.created_at | localtime }}
                         {% if letter.type == 'phone' and letter.preferred_call_time %}
                         <span class="sep">·</span> 希望来电：{{ letter.preferred_call_time }}
                         {% endif %}

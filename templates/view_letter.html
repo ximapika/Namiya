@@ -17,7 +17,7 @@
                 </div>
                 <h2 class="letter-card-title">{{ letter.title }}</h2>
             </div>
-            <span class="letter-card-date">{{ letter.created_at }}</span>
+            <span class="letter-card-date">{{ letter.created_at | localtime }}</span>
         </div>
 
         {% if letter.type == 'phone' %}
@@ -53,7 +53,7 @@
             <div class="reply-card">
                 <div class="reply-header">
                     <span class="reply-from">店员 {{ reply.admin_name }}</span>
-                    <span>{{ reply.created_at }}</span>
+                    <span>{{ reply.created_at | localtime }}</span>
                 </div>
                 <div class="reply-body">{{ reply.content }}</div>
             </div>
