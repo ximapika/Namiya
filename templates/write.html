@@ -13,11 +13,11 @@
 
         <!-- 类型切换 -->
         <div class="type-switcher">
-            <button type="button" class="type-tab active" data-type="letter" onclick="switchType('letter')">
+            <button type="button" class="type-tab active" data-type="letter">
                 <span class="type-tab-icon">✉️</span>
                 <span class="type-tab-label">写信倾诉</span>
             </button>
-            <button type="button" class="type-tab" data-type="phone" onclick="switchType('phone')">
+            <button type="button" class="type-tab" data-type="phone">
                 <span class="type-tab-icon">📞</span>
                 <span class="type-tab-label">电话倾诉</span>
             </button>
@@ -81,44 +81,6 @@
     </form>
 </div>
 
-<script>
-function switchType(type) {
-    document.getElementById('typeInput').value = type;
-    document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('[data-type="' + type + '"]').classList.add('active');
-
-    if (type === 'letter') {
-        document.getElementById('letterSection').style.display = '';
-        document.getElementById('phoneSection').style.display = 'none';
-        document.getElementById('submitBtn').textContent = '📨 寄出这封信';
-        // 同步 title 字段
-        document.querySelector('input[name="title"]').required = true;
-        document.querySelector('textarea[name="content"]').required = true;
-        document.getElementById('phoneInput').required = false;
-        document.getElementById('phoneTitleInput').required = false;
-        document.getElementById('preferredCallTimeInput').required = false;
-    } else {
-        document.getElementById('letterSection').style.display = 'none';
-        document.getElementById('phoneSection').style.display = '';
-        document.getElementById('submitBtn').textContent = '📞 提交来电登记';
-        document.querySelector('input[name="title"]').required = false;
-        document.querySelector('textarea[name="content"]').required = false;
-        document.getElementById('phoneInput').required = true;
-        document.getElementById('phoneTitleInput').required = true;
-        document.getElementById('preferredCallTimeInput').required = true;
-    }
-}
-
-// 提交前同步字段
-document.getElementById('writeForm').addEventListener('submit', function() {
-    var type = document.getElementById('typeInput').value;
-    if (type === 'phone') {
-        document.querySelector('input[name="title"]').value = document.getElementById('phoneTitleInput').value;
-        document.querySelector('textarea[name="content"]').value = document.getElementById('phoneContentInput').value;
-    }
-});
-
-switchType(document.getElementById('typeInput').value || 'letter');
-</script>
+<script src="{{ url_for('static', filename='js/write.js') }}" defer></script>
 
 {% endblock %}

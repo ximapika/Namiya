@@ -111,10 +111,11 @@ def create_app(config_name: str | None = None, test_config: dict | None = None) 
             "default-src 'self'",
             "img-src 'self' data:",
             "style-src 'self' 'unsafe-inline'",
-            "script-src 'self' 'unsafe-inline'",
+            "script-src 'self'",
             "font-src 'self' data:",
             "object-src 'none'",
             "base-uri 'self'",
+            "form-action 'self'",
             "frame-ancestors 'none'",
         ]
         response.headers.setdefault("Content-Security-Policy", "; ".join(csp))

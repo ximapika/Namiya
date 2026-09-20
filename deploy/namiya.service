@@ -1,0 +1,33 @@
+[Unit]
+Description=Namiya campus peer support
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=namiya
+Group=namiya
+WorkingDirectory=/opt/namiya/current
+EnvironmentFile=/etc/namiya.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/namiya/venv/bin/gunicorn -c gunicorn.conf.py run:app
+Restart=always
+RestartSec=5
+TimeoutStopSec=45
+UMask=0077
+StateDirectory=namiya
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/namiya
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

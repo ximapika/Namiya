@@ -47,7 +47,7 @@
                         <input type="hidden" name="redirect_to" value="staff">
                         <input type="hidden" name="selected" value="{{ staff.username }}">
                         <button type="submit" class="btn btn-ghost btn-xs"
-                                onclick="return confirm('确认撤销 {{ staff.username }} 的店员权限？')">撤销权限</button>
+                                data-confirm="确认撤销 {{ staff.username }} 的店员权限？">撤销权限</button>
                     </form>
                 </div>
             </div>
@@ -137,7 +137,7 @@
                         <input type="hidden" name="role" value="{{ role_filter }}">
                         <input type="hidden" name="selected" value="{{ account.username }}">
                         <button type="submit" class="btn btn-danger btn-xs"
-                                onclick="return confirm('确认删除账号 {{ account.username }}？这会同时删除其来信、来电、回信与权限申请记录。')">删除账号</button>
+                                data-confirm="确认删除账号 {{ account.username }}？这会同时删除其来信、来电、回信与权限申请记录。">删除账号</button>
                     </form>
                     {% else %}
                     <span class="account-static-hint">
@@ -213,7 +213,7 @@
                     <input type="hidden" name="role" value="{{ role_filter }}">
                     <input type="hidden" name="selected" value="{{ selected_user.username }}">
                     <button type="submit" class="btn btn-danger btn-sm"
-                            onclick="return confirm('确认删除账号 {{ selected_user.username }}？这会同时删除其来信、来电、回信与权限申请记录。')">删除账号</button>
+                            data-confirm="确认删除账号 {{ selected_user.username }}？这会同时删除其来信、来电、回信与权限申请记录。">删除账号</button>
                 </form>
                 {% else %}
                 <span class="account-static-hint">店长账号不支持删除或降级</span>
