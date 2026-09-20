@@ -123,7 +123,7 @@ gunicorn -c gunicorn.conf.py run:app
 
 默认不信任代理请求头。仅在可信反向代理后且应用端口无法被客户端直接访问时，设置 `TRUST_PROXY=true`；代理必须覆盖 `X-Forwarded-For` 和 `X-Forwarded-Proto`。
 
-校园服务器的服务、备份与恢复步骤见 [部署说明](deploy/README.md)。
+校园服务器的服务、备份与恢复步骤见 [部署说明](deploy/README.md)，修复范围与验证结果见 [安全检查记录](deploy/SECURITY-REVIEW.md)。
 
 ## 安全特性
 
