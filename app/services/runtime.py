@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import logging
+import os
 import secrets
 from pathlib import Path
 
@@ -25,15 +26,27 @@ def ensure_runtime_secrets(app) -> None:
         bytes_length=32,
         transform=lambda raw: base64.urlsafe_b64encode(hashlib.sha256(raw.encode("utf-8")).digest()).decode("utf-8"),
     )
+    # This independent key must remain stable across session-key rotations.
+    app.config["EMAIL_LOOKUP_KEY"] = _resolve_material(
+        app=app,
+        configured_value=app.config.get("EMAIL_LOOKUP_KEY"),
+        filename="email_lookup.key",
+        label="EMAIL_LOOKUP_KEY",
+        bytes_length=48,
+        transform=lambda raw: raw,
+    )
 
 
 def _resolve_material(app, configured_value, filename: str, label: str, bytes_length: int, transform):
     if configured_value:
         return configured_value
 
+    if app.testing:
+        return transform(secrets.token_urlsafe(bytes_length))
+
     require_secrets = app.config.get("REQUIRE_RUNTIME_SECRETS", False)
     target = Path(app.instance_path) / filename
-    if target.exists():
+    if not require_secrets and target.exists():
         value = target.read_text(encoding="utf-8").strip()
         if value:
             return value
@@ -43,6 +56,10 @@ def _resolve_material(app, configured_value, filename: str, label: str, bytes_le
 
     raw = secrets.token_urlsafe(bytes_length)
     value = transform(raw)
-    target.write_text(value, encoding="utf-8")
+    try:
+        with os.fdopen(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as output:
+            output.write(value)
+    except FileExistsError:
+        value = target.read_text(encoding="utf-8").strip()
     logger.warning("%s was not configured. Generated a development secret at %s", label, target)
     return value

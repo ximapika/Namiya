@@ -8,7 +8,7 @@
         <h1 class="form-title">欢迎回来</h1>
         <p class="form-subtitle">登录以继续使用解忧杂货铺</p>
     </div>
-    <form method="POST" autocomplete="on">
+    <form method="POST" autocomplete="on" data-password-purpose="login">
         {% include "_csrf.html" %}
         <div class="form-group">
             <label class="form-label" for="username">用户名</label>
@@ -17,7 +17,7 @@
         </div>
         <div class="form-group">
             <label class="form-label" for="password">密码</label>
-            <input class="form-input" type="password" id="password" name="password"
+            <input class="form-input" type="password" id="password" data-password-field maxlength="128"
                    placeholder="请输入密码" autocomplete="current-password" required>
         </div>
         <div class="form-actions">
@@ -25,8 +25,12 @@
         </div>
     </form>
     <div class="form-footer">
+        <a href="{{ url_for('auth.forgot_password') }}">忘记密码？</a><br>
         还没有账号？<a href="{{ url_for('auth.register') }}">注册一个</a>
     </div>
 </div>
 
+<noscript><p class="flash flash-error">请启用 JavaScript 后登录，以完成密码加密。</p></noscript>
+
 {% endblock %}
+{% block extra_js %}{% include "_password_scripts.html" %}{% endblock %}

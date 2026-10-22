@@ -1,17 +1,40 @@
-from sqlalchemy import UniqueConstraint
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from sqlalchemy import CheckConstraint, UniqueConstraint
 
 from .extensions import db, phone_cipher
 
 
 class User(db.Model):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("email_hash", "email_slot", name="uq_users_email_slot"),
+        CheckConstraint(
+            "(email_hash IS NULL AND email_slot IS NULL) OR "
+            "(email_hash IS NOT NULL AND email_slot IS NOT NULL "
+            "AND email_slot BETWEEN 1 AND 3)",
+            name="ck_users_email_slot",
+        ),
+        {"sqlite_autoincrement": True},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
+    # IDs can be reused by a legacy SQLite table. Sessions bind to this random
+    # incarnation token as well, so deletion can never authenticate a new user.
+    auth_id = db.Column(db.String(32), nullable=False, unique=True, index=True,
+                        default=lambda: uuid4().hex)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False, index=True)
     is_staff = db.Column(db.Boolean, nullable=False, default=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now(), index=True)
+    last_active_at = db.Column(db.DateTime, nullable=False, index=True,
+                               default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    # Only a keyed digest is persisted. The slot constraint caps one verified
+    # mailbox at three accounts, including simultaneous registration attempts.
+    email_hash = db.Column(db.String(64), nullable=True, index=True)
+    email_slot = db.Column(db.Integer, nullable=True)
 
     letters = db.relationship("Letter", back_populates="user", lazy="dynamic")
     replies = db.relationship("Reply", back_populates="admin", lazy="dynamic")

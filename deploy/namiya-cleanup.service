@@ -1,0 +1,24 @@
+[Unit]
+Description=Remove Namiya ordinary accounts inactive for at least 90 days
+After=network.target redis-server.service
+
+[Service]
+Type=oneshot
+User=namiya
+Group=namiya
+WorkingDirectory=/opt/namiya/current
+EnvironmentFile=/etc/namiya.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/namiya/venv/bin/flask --app run:app cleanup-inactive-accounts --apply --days 90 --batch-size 500
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/namiya
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

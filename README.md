@@ -125,6 +125,8 @@ gunicorn -c gunicorn.conf.py run:app
 
 校园服务器的服务、备份与恢复步骤见 [部署说明](deploy/README.md)，修复范围与验证结果见 [安全检查记录](deploy/SECURITY-REVIEW.md)。
 
+2026-10-14 更新所需的 SMTP、独立邮箱密钥、RSA 私钥、迁移和定期清理配置见 [更新部署与验收](deploy/UPDATE-2026-10-14.md)。生产升级前需完成这些准备；文档不表示线上已经更新。
+
 ## 安全特性
 
 - 密码使用 `werkzeug.security` 哈希存储

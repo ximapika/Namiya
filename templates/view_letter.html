@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 {% block title %}{{ letter.title }}{% endblock %}
 {% block content %}
 
@@ -63,6 +64,7 @@
             🕐 店员还没有回复，请耐心等待……
         </div>
         {% endif %}
+        {{ render_pagination(replies_page, "回复分页") }}
     </div>
 </div>
 

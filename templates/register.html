@@ -8,7 +8,7 @@
         <h1 class="form-title">创建账号</h1>
         <p class="form-subtitle">加入解忧杂货铺，开始倾诉之旅</p>
     </div>
-    <form method="POST" autocomplete="on">
+    <form method="POST" autocomplete="on" data-password-purpose="register" data-email-purpose="register">
         {% include "_csrf.html" %}
         <div class="form-group">
             <label class="form-label" for="username">用户名</label>
@@ -16,16 +16,17 @@
                    placeholder="2–20 个字符" minlength="2" maxlength="20"
                    autocomplete="username" required>
         </div>
+        {% include "_email_verification.html" %}
         <div class="form-group">
             <label class="form-label" for="password">密码</label>
-            <input class="form-input" type="password" id="password" name="password"
-                   placeholder="至少 6 个字符" minlength="6"
+            <input class="form-input" type="password" id="password" data-password-field
+                   placeholder="至少 {{ config.PASSWORD_MIN_LENGTH }} 个字符" minlength="{{ config.PASSWORD_MIN_LENGTH }}" maxlength="128"
                    autocomplete="new-password" required>
         </div>
         <div class="form-group">
             <label class="form-label" for="confirm">确认密码</label>
-            <input class="form-input" type="password" id="confirm" name="confirm"
-                   placeholder="再次输入密码" minlength="6"
+            <input class="form-input" type="password" id="confirm" data-password-confirm
+                   placeholder="再次输入密码" minlength="{{ config.PASSWORD_MIN_LENGTH }}" maxlength="128"
                    autocomplete="new-password" required>
         </div>
         <div class="form-actions">
@@ -37,4 +38,7 @@
     </div>
 </div>
 
+<noscript><p class="flash flash-error">请启用 JavaScript 后注册，以完成验证码和密码加密。</p></noscript>
+
 {% endblock %}
+{% block extra_js %}{% include "_password_scripts.html" %}{% endblock %}

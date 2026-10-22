@@ -10,6 +10,8 @@ from app.bootstrap import bootstrap_database
 from app.extensions import db
 from app.models import Letter, Reply, ReplyRequest, User
 from config import BASE_DIR, build_app_config
+from auth_helpers import encrypted_password
+from email_helpers import verified_email
 
 
 class WorryShopAppTestCase(unittest.TestCase):
@@ -36,8 +38,8 @@ class WorryShopAppTestCase(unittest.TestCase):
             "/register",
             data={
                 "username": "alice",
-                "password": "Password123",
-                "confirm": "Password123",
+                **encrypted_password(self.client, "register", "Password123"),
+                **verified_email(self.client),
             },
             follow_redirects=True,
         )
@@ -46,7 +48,7 @@ class WorryShopAppTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/login",
-            data={"username": "alice", "password": "Password123"},
+            data={"username": "alice", **encrypted_password(self.client, "login", "Password123")},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -97,7 +99,7 @@ class WorryShopAppTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/login",
-            data={"username": "admin", "password": "AdminPass123"},
+            data={"username": "admin", **encrypted_password(self.client, "login", "AdminPass123")},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -143,7 +145,7 @@ class WorryShopAppTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/login",
-            data={"username": "admin", "password": "AdminPass123"},
+            data={"username": "admin", **encrypted_password(self.client, "login", "AdminPass123")},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)

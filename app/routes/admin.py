@@ -1,65 +1,57 @@
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, url_for
-from sqlalchemy import func
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, load_only
 
 from ..auth import admin_required, staff_or_admin_required
 from ..extensions import db, limiter
 from ..models import Letter, Reply, ReplyRequest, User
 from ..services.security import normalize_username, validate_reply_content
+from ..services.pagination import paginate
+from ..services.rate_limits import user_rate_key
+from ..services.accounts import StaleAccountError, delete_account as delete_account_records
 
 
 admin_bp = Blueprint("admin", __name__)
 
 
-def _reply_count_subquery():
+def _reply_count_column():
     return (
-        db.session.query(
-            Reply.letter_id.label("letter_id"),
-            func.count(Reply.id).label("reply_count"),
-        )
-        .group_by(Reply.letter_id)
-        .subquery()
+        select(func.count(Reply.id)).where(Reply.letter_id == Letter.id)
+        .correlate(Letter).scalar_subquery().label("reply_count")
     )
 
 
-def _user_letter_count_subquery():
+def _user_letter_count_column():
     return (
-        db.session.query(
-            Letter.user_id.label("user_id"),
-            func.count(Letter.id).label("letter_count"),
-        )
-        .group_by(Letter.user_id)
-        .subquery()
+        select(func.count(Letter.id)).where(Letter.user_id == User.id)
+        .correlate(User).scalar_subquery().label("letter_count")
     )
 
 
-def _user_reply_count_subquery():
+def _user_reply_count_column():
     return (
-        db.session.query(
-            Reply.admin_id.label("user_id"),
-            func.count(Reply.id).label("reply_count"),
-        )
-        .group_by(Reply.admin_id)
-        .subquery()
+        select(func.count(Reply.id)).where(Reply.admin_id == User.id)
+        .correlate(User).scalar_subquery().label("reply_count")
     )
 
 
-def _load_user_history(user_id: int) -> list[Letter]:
-    reply_counts = _reply_count_subquery()
-    history_rows = (
-        db.session.query(Letter, reply_counts.c.reply_count)
-        .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
+def _load_user_history(user_id: int, *, exclude_id=None):
+    query = (
+        db.session.query(Letter, _reply_count_column())
+        .options(load_only(Letter.id, Letter.title, Letter.type, Letter.created_at))
         .filter(Letter.user_id == user_id)
-        .order_by(Letter.created_at.desc())
-        .all()
+        .order_by(Letter.created_at.desc(), Letter.id.desc())
     )
+    if exclude_id is not None:
+        query = query.filter(Letter.id != exclude_id)
+    pagination = paginate(query, parameter="history_page")
 
     history = []
-    for letter, reply_count in history_rows:
+    for letter, reply_count in pagination.items:
         letter.reply_count = int(reply_count or 0)
         history.append(letter)
-    return history
+    return history, pagination
 
 
 def _account_role_filter(query, role_filter: str):
@@ -90,17 +82,7 @@ def _account_management_redirect(default_selected: str | None = None):
 
 
 def _delete_user_account(user: User) -> None:
-    letter_ids = [row[0] for row in db.session.query(Letter.id).filter(Letter.user_id == user.id).all()]
-
-    ReplyRequest.query.filter(ReplyRequest.staff_id == user.id).delete(synchronize_session=False)
-    Reply.query.filter(Reply.admin_id == user.id).delete(synchronize_session=False)
-
-    if letter_ids:
-        ReplyRequest.query.filter(ReplyRequest.letter_id.in_(letter_ids)).delete(synchronize_session=False)
-        Reply.query.filter(Reply.letter_id.in_(letter_ids)).delete(synchronize_session=False)
-        Letter.query.filter(Letter.id.in_(letter_ids)).delete(synchronize_session=False)
-
-    db.session.delete(user)
+    delete_account_records(user)
 
 
 @admin_bp.route("/admin")
@@ -110,11 +92,11 @@ def admin_dashboard():
     filter_type = request.args.get("type", "all")
     search_user = request.args.get("search", "").strip()
 
-    reply_counts = _reply_count_subquery()
     query = (
-        db.session.query(Letter, reply_counts.c.reply_count)
-        .options(joinedload(Letter.user))
-        .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
+        db.session.query(Letter, _reply_count_column())
+        .options(load_only(Letter.id, Letter.user_id, Letter.title, Letter.type,
+                           Letter.created_at, Letter.preferred_call_time_raw),
+                 joinedload(Letter.user).load_only(User.username))
     )
 
     if filter_type in {"letter", "phone"}:
@@ -123,33 +105,34 @@ def admin_dashboard():
     if search_user:
         query = query.join(User, Letter.user_id == User.id).filter(User.username.ilike(f"%{search_user}%"))
 
-    letter_rows = query.order_by(Letter.created_at.desc()).all()
+    if filter_status == "pending":
+        query = query.filter(~Letter.replies.any())
+    elif filter_status == "replied":
+        query = query.filter(Letter.replies.any())
+
+    pagination = paginate(query.order_by(Letter.created_at.desc(), Letter.id.desc()))
     letters = []
-    for letter, reply_count in letter_rows:
+    for letter, reply_count in pagination.items:
         letter.reply_count = int(reply_count or 0)
         letter.username = letter.user.username
         letters.append(letter)
 
-    if filter_status == "pending":
-        letters = [item for item in letters if item.reply_count == 0]
-    elif filter_status == "replied":
-        letters = [item for item in letters if item.reply_count > 0]
-
-    total = db.session.query(func.count(Letter.id)).scalar() or 0
-    total_letter = db.session.query(func.count(Letter.id)).filter(Letter.type == "letter").scalar() or 0
-    total_phone = db.session.query(func.count(Letter.id)).filter(Letter.type == "phone").scalar() or 0
-    pending = (
-        db.session.query(func.count(Letter.id))
-        .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
-        .filter(reply_counts.c.reply_count.is_(None))
-        .scalar()
-        or 0
+    stats = (
+        db.session.query(
+            func.count(Letter.id),
+            func.coalesce(func.sum(case((Letter.type == "letter", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Letter.type == "phone", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((~Letter.replies.any(), 1), else_=0)), 0),
+        )
+        .one()
     )
+    total, total_letter, total_phone, pending = stats
     replied = total - pending
 
     pending_requests = []
+    requests_page = None
     if g.current_user.is_admin:
-        pending_requests = (
+        requests_page = paginate(
             db.session.query(
                 ReplyRequest.id,
                 ReplyRequest.letter_id,
@@ -160,9 +143,10 @@ def admin_dashboard():
             .join(Letter, ReplyRequest.letter_id == Letter.id)
             .join(User, ReplyRequest.staff_id == User.id)
             .filter(ReplyRequest.status == "pending")
-            .order_by(ReplyRequest.created_at.asc())
-            .all()
+            .order_by(ReplyRequest.created_at.asc(), ReplyRequest.id.asc()),
+            parameter="requests_page",
         )
+        pending_requests = requests_page.items
 
     return render_template(
         "admin.html",
@@ -176,6 +160,8 @@ def admin_dashboard():
         filter_type=filter_type,
         search_user=search_user,
         pending_requests=pending_requests,
+        pagination=pagination,
+        requests_page=requests_page,
     )
 
 
@@ -185,9 +171,10 @@ def admin_dashboard():
     lambda: current_app.config["ADMIN_MUTATION_RATE_LIMIT"],
     methods=["POST"],
     per_method=True,
+    key_func=user_rate_key,
 )
 def admin_letter(letter_id: int):
-    letter = Letter.query.options(joinedload(Letter.user)).filter(Letter.id == letter_id).first()
+    letter = Letter.query.options(joinedload(Letter.user).load_only(User.username)).filter(Letter.id == letter_id).first()
 
     if not letter:
         flash("信件不存在", "error")
@@ -249,7 +236,7 @@ def admin_letter(letter_id: int):
                     flash("该信件已有您的权限记录，请刷新后重试", "warning")
                 return redirect(url_for("admin.admin_letter", letter_id=letter_id))
 
-    replies = (
+    replies_page = paginate(
         db.session.query(
             Reply.content,
             Reply.created_at,
@@ -257,36 +244,26 @@ def admin_letter(letter_id: int):
         )
         .join(User, Reply.admin_id == User.id)
         .filter(Reply.letter_id == letter_id)
-        .order_by(Reply.created_at.asc())
-        .all()
+        .order_by(Reply.created_at.asc(), Reply.id.asc()), parameter="reply_page"
     )
 
-    reply_counts = _reply_count_subquery()
-    history_rows = (
-        db.session.query(Letter, reply_counts.c.reply_count)
-        .outerjoin(reply_counts, Letter.id == reply_counts.c.letter_id)
-        .filter(Letter.user_id == letter.user_id, Letter.id != letter_id)
-        .order_by(Letter.created_at.desc())
-        .all()
-    )
-    user_history = []
-    for history_letter, reply_count in history_rows:
-        history_letter.reply_count = int(reply_count or 0)
-        user_history.append(history_letter)
+    user_history, history_page = _load_user_history(letter.user_id, exclude_id=letter_id)
 
     return render_template(
         "admin_letter.html",
         letter=letter,
-        replies=replies,
+        replies=replies_page.items,
+        replies_page=replies_page,
         can_reply=can_reply,
         has_pending_request=has_pending_request,
         user_history=user_history,
+        history_page=history_page,
     )
 
 
 @admin_bp.route("/admin/approve_reply/<int:req_id>", methods=["POST"])
 @admin_required
-@limiter.limit("20 per minute", methods=["POST"], per_method=True)
+@limiter.limit("20 per minute", methods=["POST"], per_method=True, key_func=user_rate_key)
 def approve_reply(req_id: int):
     action = request.form.get("action", "approve")
     req = db.session.get(ReplyRequest, req_id)
@@ -313,42 +290,36 @@ def admin_staff():
     if role_filter not in {"all", "admin", "staff", "user"}:
         role_filter = "all"
 
-    staff_list = (
+    staff_page = paginate(
         User.query.filter_by(is_staff=True, is_admin=False)
-        .order_by(User.username.asc())
-        .all()
+        .options(load_only(User.id, User.username, User.created_at))
+        .order_by(User.username.asc(), User.id.asc()), parameter="staff_page"
+    )
+    staff_list = staff_page.items
+
+    total_accounts, total_admins, total_staff, total_users = db.session.query(
+        func.count(User.id),
+        func.coalesce(func.sum(case((User.is_admin.is_(True), 1), else_=0)), 0),
+        func.coalesce(func.sum(case((User.is_staff.is_(True) & User.is_admin.is_(False), 1), else_=0)), 0),
+        func.coalesce(func.sum(case((User.is_staff.is_(False) & User.is_admin.is_(False), 1), else_=0)), 0),
+    ).one()
+
+    public_user_fields = load_only(
+        User.id, User.username, User.is_admin, User.is_staff, User.created_at
     )
 
-    total_accounts = db.session.query(func.count(User.id)).scalar() or 0
-    total_admins = db.session.query(func.count(User.id)).filter(User.is_admin.is_(True)).scalar() or 0
-    total_staff = (
-        db.session.query(func.count(User.id))
-        .filter(User.is_staff.is_(True), User.is_admin.is_(False))
-        .scalar()
-        or 0
-    )
-    total_users = (
-        db.session.query(func.count(User.id))
-        .filter(User.is_admin.is_(False), User.is_staff.is_(False))
-        .scalar()
-        or 0
-    )
-
-    letter_counts = _user_letter_count_subquery()
-    reply_counts = _user_reply_count_subquery()
     account_query = (
-        db.session.query(User, letter_counts.c.letter_count, reply_counts.c.reply_count)
-        .outerjoin(letter_counts, User.id == letter_counts.c.user_id)
-        .outerjoin(reply_counts, User.id == reply_counts.c.user_id)
+        db.session.query(User, _user_letter_count_column(), _user_reply_count_column())
+        .options(public_user_fields)
     )
     account_query = _account_role_filter(account_query, role_filter)
     if search_user:
         account_query = account_query.filter(User.username.ilike(f"%{search_user}%"))
 
-    account_rows = account_query.order_by(User.created_at.desc(), User.username.asc()).all()
+    pagination = paginate(account_query.order_by(User.created_at.desc(), User.id.desc()))
     account_list = []
     exact_match = None
-    for account, letter_count, reply_count in account_rows:
+    for account, letter_count, reply_count in pagination.items:
         account.letter_count = int(letter_count or 0)
         account.reply_authored_count = int(reply_count or 0)
         account_list.append(account)
@@ -357,25 +328,24 @@ def admin_staff():
 
     selected_user = None
     if selected_username:
-        selected_user = User.query.filter_by(username=selected_username).first()
+        selected_user = User.query.options(public_user_fields).filter_by(username=selected_username).first()
     elif exact_match:
         selected_user = exact_match
+    elif search_user:
+        selected_user = User.query.options(public_user_fields).filter_by(username=search_user).first()
 
     selected_history = []
+    history_page = None
     selected_handled_count = 0
     if selected_user:
-        selected_user.letter_count = getattr(
-            selected_user,
-            "letter_count",
-            Letter.query.filter_by(user_id=selected_user.id).count(),
-        )
-        selected_user.reply_authored_count = getattr(
-            selected_user,
-            "reply_authored_count",
-            Reply.query.filter_by(admin_id=selected_user.id).count(),
-        )
-        selected_history = _load_user_history(selected_user.id)
-        selected_handled_count = sum(1 for item in selected_history if item.reply_count > 0)
+        # The aggregates cover the whole account, independently of history pagination.
+        selected_user.letter_count, selected_handled_count = db.session.query(
+            func.count(Letter.id),
+            func.coalesce(func.sum(case((Letter.replies.any(), 1), else_=0)), 0),
+        ).filter(Letter.user_id == selected_user.id).one()
+        if not hasattr(selected_user, "reply_authored_count"):
+            selected_user.reply_authored_count = Reply.query.filter_by(admin_id=selected_user.id).count()
+        selected_history, history_page = _load_user_history(selected_user.id)
         selected_username = selected_user.username
 
     return render_template(
@@ -392,12 +362,15 @@ def admin_staff():
         selected_username=selected_username,
         selected_history=selected_history,
         selected_handled_count=selected_handled_count,
+        pagination=pagination,
+        staff_page=staff_page,
+        history_page=history_page,
     )
 
 
 @admin_bp.route("/admin/grant_staff", methods=["POST"])
 @admin_required
-@limiter.limit("20 per minute", methods=["POST"], per_method=True)
+@limiter.limit("20 per minute", methods=["POST"], per_method=True, key_func=user_rate_key)
 def grant_staff():
     username = normalize_username(request.form.get("username", ""))
     action = request.form.get("action", "grant")
@@ -423,7 +396,7 @@ def grant_staff():
 
 @admin_bp.route("/admin/delete_account", methods=["POST"])
 @admin_required
-@limiter.limit("10 per minute", methods=["POST"], per_method=True)
+@limiter.limit("10 per minute", methods=["POST"], per_method=True, key_func=user_rate_key)
 def delete_account():
     username = normalize_username(request.form.get("username", ""))
     user = User.query.filter_by(username=username).first()
@@ -440,16 +413,24 @@ def delete_account():
         flash("不能删除当前登录账号", "warning")
         return _account_management_redirect(default_selected=username)
 
-    _delete_user_account(user)
-    db.session.commit()
+    try:
+        _delete_user_account(user)
+        db.session.commit()
+    except StaleAccountError as error:
+        db.session.rollback()
+        flash(str(error), "error")
+        return _account_management_redirect(default_selected=username)
     flash(f"账号 {username} 及其相关记录已删除", "success")
     return _account_management_redirect()
 
 
 @admin_bp.route("/admin/grant_reply_direct/<int:letter_id>", methods=["POST"])
 @admin_required
-@limiter.limit("20 per minute", methods=["POST"], per_method=True)
+@limiter.limit("20 per minute", methods=["POST"], per_method=True, key_func=user_rate_key)
 def grant_reply_direct(letter_id: int):
+    if db.session.get(Letter, letter_id) is None:
+        flash("信件不存在", "error")
+        return redirect(url_for("admin.admin_dashboard"))
     staff_username = normalize_username(request.form.get("staff_username", ""))
     staff = User.query.filter_by(username=staff_username, is_staff=True, is_admin=False).first()
     if not staff:

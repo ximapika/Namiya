@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 {% block title %}我的信箱{% endblock %}
 {% block content %}
 
@@ -56,6 +57,7 @@
         <a href="{{ url_for('user.write') }}" class="btn btn-primary">✍ 开始倾诉</a>
     </div>
     {% endif %}
+    {{ render_pagination(pagination, "信件分页") }}
 </div>
 
 {% endblock %}

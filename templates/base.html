@@ -27,6 +27,7 @@
                     <a href="{{ url_for('user.write') }}" class="nav-link">✍ 写信</a>
                     <a href="{{ url_for('user.inbox') }}" class="nav-link">📮 我的信箱</a>
                 {% endif %}
+                <a href="{{ url_for('auth.account_email') }}" class="nav-link">验证邮箱</a>
                 <span class="nav-user">{{ session.username }}</span>
                 <form action="{{ url_for('auth.logout') }}" method="post">
                     {% include "_csrf.html" %}

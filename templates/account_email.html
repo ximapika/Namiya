@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}验证邮箱{% endblock %}
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <div class="form-icon">✉</div>
+        <h1 class="form-title">验证邮箱</h1>
+        <p class="form-subtitle">{{ '已绑定验证邮箱，可在此更新' if g.current_user.email_hash else '绑定邮箱，方便日后找回密码' }}</p>
+    </div>
+    <form method="post" data-password-purpose="bind_email" data-email-purpose="bind_email">
+        {% include "_csrf.html" %}
+        <div class="form-group">
+            <label class="form-label" for="password">当前密码</label>
+            <input class="form-input" type="password" id="password" data-password-field
+                   autocomplete="current-password" maxlength="128" required>
+        </div>
+        {% include "_email_verification.html" %}
+        <button type="submit" class="btn btn-primary">验证并绑定邮箱</button>
+    </form>
+    <p class="form-hint">为保护隐私，页面不会回显已绑定的邮箱地址。</p>
+</div>
+{% endblock %}
+{% block extra_js %}{% include "_password_scripts.html" %}{% endblock %}

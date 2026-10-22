@@ -5,9 +5,12 @@ from urllib.parse import urlparse
 from flask import flash, g, redirect, request, session, url_for
 
 
-def sync_session_from_user(user, preserve_theme: bool = True) -> None:
+def sync_session_from_user(user, preserve_theme: bool = True, *, verified_auth_id: str | None = None) -> None:
     theme_name = session.get("theme_name") if preserve_theme else None
     session["user_id"] = user.id
+    # Keep the identity that was actually authenticated. A database refresh
+    # during this request must never upgrade an old cookie after password reset.
+    session["auth_id"] = verified_auth_id if verified_auth_id is not None else user.auth_id
     session["username"] = user.username
     session["is_admin"] = bool(user.is_admin)
     session["is_staff"] = bool(user.is_staff)
@@ -16,12 +19,12 @@ def sync_session_from_user(user, preserve_theme: bool = True) -> None:
         session["theme_name"] = theme_name
 
 
-def login_user(user) -> None:
+def login_user(user, *, verified_auth_id: str | None = None) -> None:
     theme_name = session.get("theme_name")
     session.clear()
     if theme_name:
         session["theme_name"] = theme_name
-    sync_session_from_user(user, preserve_theme=True)
+    sync_session_from_user(user, preserve_theme=True, verified_auth_id=verified_auth_id)
 
 
 def logout_user() -> None:

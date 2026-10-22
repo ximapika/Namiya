@@ -1567,3 +1567,10 @@ a { color: inherit; text-decoration: none; }
   .account-item-actions { width: 100%; justify-content: flex-start; }
   .search-result-header { flex-direction: column; align-items: flex-start; }
 }
+
+/* Account verification forms */
+.verification-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.verification-row .form-input { flex: 1 1 160px; min-width: 0; }
+.verification-row img { max-width: 100%; object-fit: contain; border-radius: 8px; }
+.form-hint { font-size: .85rem; line-height: 1.65; opacity: .8; margin: .5rem 0 1rem; }
+[data-email-status], [data-captcha-error], [data-password-error] { font-size: .9rem; line-height: 1.6; }

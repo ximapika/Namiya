@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 {% block title %}账号管理{% endblock %}
 {% block content %}
 
@@ -28,7 +29,7 @@
     </div>
 
     <div class="staff-section">
-        <div class="section-title">当前店员（{{ staff_list | length }}）</div>
+        <div class="section-title">当前店员（{{ staff_page.total }}）</div>
         {% if staff_list %}
         <div class="staff-list">
             {% for staff in staff_list %}
@@ -59,6 +60,7 @@
             <p class="empty-text">暂无店员</p>
         </div>
         {% endif %}
+        {{ render_pagination(staff_page, "店员分页") }}
     </div>
 
     <div class="staff-section">
@@ -157,6 +159,7 @@
             </p>
         </div>
         {% endif %}
+        {{ render_pagination(pagination, "账号分页") }}
     </div>
 
     {% if selected_user %}
@@ -223,7 +226,7 @@
             {% if selected_history %}
             <div class="user-history-section" style="margin-top:1.2rem;">
                 <div class="user-history-title">
-                    <span>📁</span> 历史来信来电（{{ selected_history | length }} 条）
+                    <span>📁</span> 历史来信来电（{{ history_page.total }} 条）
                 </div>
                 <div class="user-history-list">
                     {% for h in selected_history %}
@@ -250,6 +253,7 @@
                     </a>
                     {% endfor %}
                 </div>
+                {{ render_pagination(history_page, "历史信件分页") }}
             </div>
             {% else %}
             <div style="margin-top:1rem;color:var(--c-text-muted);font-size:.9rem;">该用户暂无来信来电记录</div>

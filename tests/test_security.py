@@ -37,6 +37,7 @@ class SecurityTests(unittest.TestCase):
     def login(self, user):
         with self.client.session_transaction() as session:
             session['user_id'] = user.id
+            session['auth_id'] = user.auth_id
 
     def test_redirects_reject_external_and_browser_normalized_urls(self):
         for target in ('https://evil.example', '//evil.example', '/\\evil.example',

@@ -1,0 +1,9 @@
+{% macro render_pagination(pagination, label='列表分页') %}
+{% if pagination and pagination.pages > 1 %}
+<nav class="pagination" aria-label="{{ label }}" style="display:flex;gap:1rem;align-items:center;margin:1rem 0;flex-wrap:wrap;">
+    {% if pagination.page > 1 %}<a class="btn btn-ghost btn-sm" href="{{ pagination.url(pagination.page - 1) }}">上一页</a>{% endif %}
+    <span>第 {{ pagination.page }} / {{ pagination.pages }} 页 · 共 {{ pagination.total }} 条</span>
+    {% if pagination.page < pagination.pages %}<a class="btn btn-ghost btn-sm" href="{{ pagination.url(pagination.page + 1) }}">下一页</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

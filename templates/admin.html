@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 {% block title %}信件管理{% endblock %}
 {% block content %}
 
@@ -74,7 +75,7 @@
     <!-- 待审批的回复申请（仅店长可见） -->
     {% if session.is_admin and pending_requests %}
     <div class="requests-section">
-        <div class="requests-title">⏳ 待审批的回复申请（{{ pending_requests | length }}）</div>
+        <div class="requests-title">⏳ 待审批的回复申请（{{ requests_page.total }}）</div>
         {% for req in pending_requests %}
         <div class="request-item">
             <div class="request-info">
@@ -98,6 +99,7 @@
             </div>
         </div>
         {% endfor %}
+        {{ render_pagination(requests_page, "待审批申请分页") }}
     </div>
     {% endif %}
 
@@ -159,6 +161,7 @@
         </p>
     </div>
     {% endif %}
+    {{ render_pagination(pagination, "信件分页") }}
 </div>
 
 {% endblock %}

@@ -1,0 +1,27 @@
+<div class="form-group">
+    <label class="form-label" for="email">北大邮箱</label>
+    <input class="form-input" id="email" name="email" type="email" maxlength="254"
+           autocomplete="email" placeholder="@pku.edu.cn 或 @stu.pku.edu.cn" required>
+    <p class="form-hint">邮箱仅用于验证和找回密码，不会显示给店长或店员。每个邮箱最多绑定 3 个账号。</p>
+</div>
+<div class="form-group" data-captcha-widget>
+    <label class="form-label" for="captcha_answer">图片验证码</label>
+    <div class="verification-row">
+        <img data-captcha-image width="230" height="78" alt="正在加载验证码">
+        <button class="btn btn-secondary" type="button" data-captcha-refresh>换一张</button>
+    </div>
+    <input type="hidden" name="captcha_id">
+    <input class="form-input" id="captcha_answer" name="captcha_answer" type="text"
+           maxlength="6" autocomplete="off" spellcheck="false" placeholder="发送邮件前输入图片中的六位字符">
+    <p data-captcha-error role="status" aria-live="polite"></p>
+</div>
+<div class="form-group">
+    <label class="form-label" for="email_code">邮箱验证码</label>
+    <div class="verification-row">
+        <input class="form-input" id="email_code" name="email_code" type="text" inputmode="numeric"
+               pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="六位数字" required>
+        <button class="btn btn-secondary" type="button" data-send-email-code>发送验证码</button>
+    </div>
+    <input type="hidden" name="email_challenge">
+    <p data-email-status role="status" aria-live="polite"></p>
+</div>
